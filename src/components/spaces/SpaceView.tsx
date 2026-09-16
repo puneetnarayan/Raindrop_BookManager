@@ -1,0 +1,156 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { MoreHorizontal, Plus } from "lucide-react";
+import { useWorkspace } from "@/lib/client/workspace-context";
+import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { CollectionModal } from "@/components/spaces/CollectionModal";
+import { SpaceModal } from "@/components/spaces/SpaceModal";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+
+export function SpaceView({ spaceId }: { spaceId: string }) {
+  const { spaces, collections, resources, updateSpace } = useWorkspace();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedCollectionId = searchParams.get("collection");
+
+  const [showNewCollection, setShowNewCollection] = useState(false);
+  const [editingSpace, setEditingSpace] = useState(false);
+  const [confirmArchiveSpace, setConfirmArchiveSpace] = useState(false);
+
+  const space = spaces.find((s) => s.id === spaceId);
+  const spaceCollections = collections
+    .filter((c) => c.spaceId === spaceId && !c.trash && !c.archived)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (!space) {
+    return (
+      <div className="p-6 text-sm text-neutral-500">
+        Space not found. It may have been deleted.
+      </div>
+    );
+  }
+
+  const visibleResources = resources
+    .filter((r) => r.spaceId === spaceId && !r.trash && !r.archived)
+    .filter((r) => !selectedCollectionId || r.collectionId === selectedCollectionId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  function selectCollection(id: string | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set("collection", id);
+    else params.delete("collection");
+    router.push(`/space/${spaceId}?${params.toString()}`);
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: space.color || "#a3a3a3" }} />
+          <h1 className="text-2xl font-semibold">{space.name}</h1>
+        </div>
+        <div className="relative">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center rounded p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              <MoreHorizontal size={18} />
+            </summary>
+            <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
+              <button
+                onClick={() => setEditingSpace(true)}
+                className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Rename / recolor
+              </button>
+              <button
+                onClick={() => updateSpace(spaceId, { pinned: !space.pinned })}
+                className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                {space.pinned ? "Unpin" : "Pin"} Space
+              </button>
+              <button
+                onClick={() => setConfirmArchiveSpace(true)}
+                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Archive Space
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => selectCollection(null)}
+          className={`rounded-full px-3 py-1 text-sm ${
+            !selectedCollectionId
+              ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+              : "border border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
+          }`}
+        >
+          All
+        </button>
+        {spaceCollections.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => selectCollection(c.id)}
+            className={`rounded-full px-3 py-1 text-sm ${
+              selectedCollectionId === c.id
+                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                : "border border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
+            }`}
+          >
+            {c.name}
+          </button>
+        ))}
+        <button
+          onClick={() => setShowNewCollection(true)}
+          className="flex items-center gap-1 rounded-full border border-dashed border-neutral-300 px-3 py-1 text-sm text-neutral-400 hover:border-neutral-400 hover:text-neutral-600 dark:border-neutral-700"
+        >
+          <Plus size={14} /> Collection
+        </button>
+      </div>
+
+      {selectedCollectionId &&
+        (() => {
+          const c = spaceCollections.find((sc) => sc.id === selectedCollectionId);
+          return c?.description ? (
+            <p className="text-sm text-neutral-500">{c.description}</p>
+          ) : null;
+        })()}
+
+      <ResourceGrid
+        resources={visibleResources}
+        emptyLabel={
+          spaceCollections.length === 0
+            ? "Create a collection, then add resources to it."
+            : "No resources here yet."
+        }
+      />
+
+      {showNewCollection && (
+        <CollectionModal
+          spaceId={spaceId}
+          onClose={() => setShowNewCollection(false)}
+          onCreated={(c) => selectCollection(c.id)}
+        />
+      )}
+      {editingSpace && <SpaceModal space={space} onClose={() => setEditingSpace(false)} />}
+      {confirmArchiveSpace && (
+        <ConfirmDialog
+          title="Archive Space"
+          message={`Archive "${space.name}"? You can restore it from the Archive view later.`}
+          confirmLabel="Archive"
+          danger
+          onConfirm={async () => {
+            await updateSpace(spaceId, { archived: true });
+            setConfirmArchiveSpace(false);
+            router.push("/");
+          }}
+          onCancel={() => setConfirmArchiveSpace(false)}
+        />
+      )}
+    </div>
+  );
+}
