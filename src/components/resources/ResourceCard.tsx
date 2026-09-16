@@ -5,12 +5,12 @@ import { Archive, ArchiveRestore, Globe, Pencil, Pin, PinOff, Star, Trash2 } fro
 import { Resource } from "@/lib/validation/schemas";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { pastelTint } from "@/lib/client/colors";
+import { EditResourceModal } from "@/components/resources/EditResourceModal";
 
 export function ResourceCard({ resource }: { resource: Resource }) {
   const { updateResource, spaces } = useWorkspace();
   const [busy, setBusy] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(resource.title);
+  const [showEdit, setShowEdit] = useState(false);
 
   const space = spaces.find((s) => s.id === resource.spaceId);
   const cardBg = pastelTint(space?.color, 0.35);
@@ -28,16 +28,6 @@ export function ResourceCard({ resource }: { resource: Resource }) {
 
   function handleOpen() {
     updateResource(resource.id, { lastOpenedAt: new Date().toISOString() }).catch(() => {});
-  }
-
-  function saveTitle() {
-    const trimmed = titleDraft.trim();
-    setEditingTitle(false);
-    if (trimmed && trimmed !== resource.title) {
-      updateResource(resource.id, { title: trimmed }).catch(() => {});
-    } else {
-      setTitleDraft(resource.title);
-    }
   }
 
   return (
@@ -92,33 +82,15 @@ export function ResourceCard({ resource }: { resource: Resource }) {
             <Globe size={14} className="mt-0.5 shrink-0 text-neutral-500" />
           )}
 
-          {editingTitle ? (
-            <input
-              autoFocus
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") e.currentTarget.blur();
-                if (e.key === "Escape") {
-                  setTitleDraft(resource.title);
-                  setEditingTitle(false);
-                }
-              }}
-              onClick={(e) => e.preventDefault()}
-              className="w-full rounded border border-violet-300 bg-white/90 px-1 py-0.5 text-sm dark:bg-neutral-900"
-            />
-          ) : (
-            <a
-              href={resource.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleOpen}
-              className="line-clamp-2 text-sm font-medium hover:underline"
-            >
-              {resource.title || resource.url}
-            </a>
-          )}
+          <a
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleOpen}
+            className="line-clamp-2 text-sm font-medium hover:underline"
+          >
+            {resource.title || resource.url}
+          </a>
         </div>
         {resource.description && (
           <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">{resource.description}</p>
@@ -141,11 +113,9 @@ export function ResourceCard({ resource }: { resource: Resource }) {
       <div className="relative flex items-center justify-end gap-1 border-t border-black/5 p-1.5 opacity-0 transition group-hover:opacity-100 dark:border-white/10">
         <button
           disabled={busy}
-          onClick={() => {
-            setTitleDraft(resource.title);
-            setEditingTitle(true);
-          }}
-          aria-label="Edit title"
+          onClick={() => setShowEdit(true)}
+          aria-label="Edit resource"
+          title="Edit resource"
           className="rounded p-1 text-neutral-500 hover:bg-white/60 dark:hover:bg-black/30"
         >
           <Pencil size={14} />
@@ -194,6 +164,8 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           <Trash2 size={14} />
         </button>
       </div>
+
+      {showEdit && <EditResourceModal resource={resource} onClose={() => setShowEdit(false)} />}
     </div>
   );
 }
