@@ -66,14 +66,10 @@ export function CollectionModal({
           />
         </div>
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700">
+          <button type="button" onClick={onClose} className="btn-pastel-secondary">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!name.trim() || saving}
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          <button type="submit" disabled={!name.trim() || saving} className="btn-pastel-primary">
             {saving ? "Saving…" : collection ? "Save" : "Create Collection"}
           </button>
         </div>

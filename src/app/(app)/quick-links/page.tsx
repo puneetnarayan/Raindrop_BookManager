@@ -49,14 +49,10 @@ function QuickLinkForm({ onClose }: { onClose: () => void }) {
           />
         </div>
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700">
+          <button type="button" onClick={onClose} className="btn-pastel-secondary">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!name.trim() || !url.trim() || saving}
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          <button type="submit" disabled={!name.trim() || !url.trim() || saving} className="btn-pastel-primary">
             {saving ? "Saving…" : "Create"}
           </button>
         </div>
@@ -77,7 +73,7 @@ export default function QuickLinksPage() {
         <h1 className="text-2xl font-semibold">Quick Links</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white dark:bg-white dark:text-neutral-900"
+          className="btn-pastel-primary flex items-center gap-1.5"
         >
           <Plus size={16} /> New Quick Link
         </button>

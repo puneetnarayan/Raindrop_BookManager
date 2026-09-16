@@ -5,6 +5,11 @@ import { Modal } from "@/components/common/Modal";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { fetchUrlMetadata } from "@/lib/client/api";
 import { Loader2 } from "lucide-react";
+import { SpaceModal } from "@/components/spaces/SpaceModal";
+import { CollectionModal } from "@/components/spaces/CollectionModal";
+
+const NEW_SPACE = "__new_space__";
+const NEW_COLLECTION = "__new_collection__";
 
 function normalizeUrl(input: string): string | null {
   const trimmed = input.trim();
@@ -46,6 +51,8 @@ export function AddResourceModal({
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [saving, setSaving] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [showNewSpace, setShowNewSpace] = useState(false);
+  const [showNewCollection, setShowNewCollection] = useState(false);
 
   const spaceCollections = collections.filter(
     (c) => c.spaceId === spaceId && !c.trash && !c.archived
@@ -140,6 +147,10 @@ export function AddResourceModal({
             <select
               value={spaceId}
               onChange={(e) => {
+                if (e.target.value === NEW_SPACE) {
+                  setShowNewSpace(true);
+                  return;
+                }
                 setSpaceId(e.target.value);
                 setCollectionOverride(null);
               }}
@@ -153,14 +164,22 @@ export function AddResourceModal({
                     {s.name}
                   </option>
                 ))}
+              <option value={NEW_SPACE}>+ New Space…</option>
             </select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Collection</label>
             <select
               value={collectionId}
-              onChange={(e) => setCollectionOverride(e.target.value)}
-              className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+              onChange={(e) => {
+                if (e.target.value === NEW_COLLECTION) {
+                  setShowNewCollection(true);
+                  return;
+                }
+                setCollectionOverride(e.target.value);
+              }}
+              disabled={!spaceId}
+              className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800"
             >
               {spaceCollections.length === 0 && <option value="">No collections yet</option>}
               {spaceCollections.map((c) => (
@@ -168,6 +187,7 @@ export function AddResourceModal({
                   {c.name}
                 </option>
               ))}
+              {spaceId && <option value={NEW_COLLECTION}>+ New Collection…</option>}
             </select>
           </div>
         </div>
@@ -223,18 +243,31 @@ export function AddResourceModal({
         </div>
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700">
+          <button type="button" onClick={onClose} className="btn-pastel-secondary">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={saving || !spaceId || !collectionId}
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          <button type="submit" disabled={saving || !spaceId || !collectionId} className="btn-pastel-primary">
             {saving ? "Saving…" : "Save Resource"}
           </button>
         </div>
       </form>
+
+      {showNewSpace && (
+        <SpaceModal
+          onClose={() => setShowNewSpace(false)}
+          onCreated={(created) => {
+            setSpaceId(created.id);
+            setCollectionOverride(null);
+          }}
+        />
+      )}
+      {showNewCollection && spaceId && (
+        <CollectionModal
+          spaceId={spaceId}
+          onClose={() => setShowNewCollection(false)}
+          onCreated={(created) => setCollectionOverride(created.id)}
+        />
+      )}
     </Modal>
   );
 }

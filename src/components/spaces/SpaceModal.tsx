@@ -5,14 +5,22 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { Space } from "@/lib/validation/schemas";
+import { PASTEL_COLORS } from "@/lib/client/colors";
 
-const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
-
-export function SpaceModal({ space, onClose }: { space?: Space; onClose: () => void }) {
+export function SpaceModal({
+  space,
+  onClose,
+  onCreated,
+}: {
+  space?: Space;
+  onClose: () => void;
+  /** When provided, called instead of navigating to the new space's page. */
+  onCreated?: (space: Space) => void;
+}) {
   const { createSpace, updateSpace } = useWorkspace();
   const router = useRouter();
   const [name, setName] = useState(space?.name ?? "");
-  const [color, setColor] = useState(space?.color ?? COLORS[0]);
+  const [color, setColor] = useState(space?.color ?? PASTEL_COLORS[0]);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,7 +32,8 @@ export function SpaceModal({ space, onClose }: { space?: Space; onClose: () => v
         await updateSpace(space.id, { name: name.trim(), color });
       } else {
         const created = await createSpace({ name: name.trim(), color });
-        router.push(`/space/${created.id}`);
+        if (onCreated) onCreated(created);
+        else router.push(`/space/${created.id}`);
       }
       onClose();
     } catch {
@@ -49,8 +58,8 @@ export function SpaceModal({ space, onClose }: { space?: Space; onClose: () => v
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">Color</label>
-          <div className="flex gap-2">
-            {COLORS.map((c) => (
+          <div className="flex flex-wrap gap-2">
+            {PASTEL_COLORS.map((c) => (
               <button
                 type="button"
                 key={c}
@@ -63,14 +72,10 @@ export function SpaceModal({ space, onClose }: { space?: Space; onClose: () => v
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700">
+          <button type="button" onClick={onClose} className="btn-pastel-secondary">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={!name.trim() || saving}
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          <button type="submit" disabled={!name.trim() || saving} className="btn-pastel-primary">
             {saving ? "Saving…" : space ? "Save" : "Create Space"}
           </button>
         </div>

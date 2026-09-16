@@ -49,6 +49,11 @@ interface WorkspaceContextValue {
   toast: string | null;
   dismissToast: () => void;
   reload: () => Promise<void>;
+  /** null while unknown, then true/false once the connection check completes. */
+  githubConnected: boolean | null;
+  githubRepository: string | null;
+  /** Increments on every successful write; UI can watch it to pulse a "saved" indicator. */
+  saveSignal: number;
 
   createSpace: (input: { name: string; icon?: string; color?: string }) => Promise<Space>;
   updateSpace: (id: string, patch: Partial<Space>) => Promise<void>;
@@ -68,6 +73,7 @@ interface WorkspaceContextValue {
   deleteResourceForever: (id: string) => Promise<void>;
 
   createTag: (name: string) => Promise<Tag>;
+  renameTag: (id: string, newName: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
 
   createQuickLink: (input: { name: string; url: string; icon?: string; color?: string }) => Promise<QuickLink>;
@@ -104,6 +110,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
+  const [githubRepository, setGithubRepository] = useState<string | null>(null);
+  const [saveSignal, setSaveSignal] = useState(0);
   const storeRef = useRef(store);
   useEffect(() => {
     storeRef.current = store;
@@ -133,6 +142,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     load();
   }, [load]);
 
+  const checkGithubConnection = useCallback(async () => {
+    try {
+      const res = await fetch("/api/github/status", { cache: "no-store" });
+      const json = await res.json();
+      setGithubConnected(res.ok && json.connected === true);
+      setGithubRepository(json.repository ?? null);
+    } catch {
+      setGithubConnected(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch-on-mount
+    checkGithubConnection();
+  }, [checkGithubConnection]);
+
   const showToast = useCallback((message: string) => {
     setToast(message);
   }, []);
@@ -158,6 +183,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           ...prev,
           [sliceKey]: { data: nextData, sha },
         }));
+        setSaveSignal((s) => s + 1);
+        setGithubConnected(true);
         return nextData;
       } catch (err) {
         if (err instanceof ConflictError) {
@@ -367,8 +394,51 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  const renameTag = useCallback<WorkspaceContextValue["renameTag"]>(
+    async (id, newName) => {
+      const tag = storeRef.current.tags.data.find((t) => t.id === id);
+      const trimmed = newName.trim();
+      if (!tag || !trimmed || trimmed === tag.name) return;
+
+      // Resources store tags by name, so a rename has to be propagated to every
+      // resource that references the old name before the tag record itself changes.
+      await commit(
+        "resources",
+        "resources",
+        (cur) =>
+          (cur as Resource[]).map((r) =>
+            r.tags.includes(tag.name)
+              ? { ...r, tags: r.tags.map((t) => (t === tag.name ? trimmed : t)), updatedAt: now() }
+              : r
+          ),
+        `chore(data): rename tag "${tag.name}" to "${trimmed}" on resources`
+      );
+      await commit(
+        "tags",
+        "tags",
+        (cur) => (cur as Tag[]).map((t) => (t.id === id ? { ...t, name: trimmed, updatedAt: now() } : t)),
+        `chore(data): rename tag "${tag.name}" to "${trimmed}"`
+      );
+    },
+    [commit]
+  );
+
   const deleteTag = useCallback<WorkspaceContextValue["deleteTag"]>(
     async (id) => {
+      const tag = storeRef.current.tags.data.find((t) => t.id === id);
+      if (tag) {
+        await commit(
+          "resources",
+          "resources",
+          (cur) =>
+            (cur as Resource[]).map((r) =>
+              r.tags.includes(tag.name)
+                ? { ...r, tags: r.tags.filter((t) => t !== tag.name), updatedAt: now() }
+                : r
+            ),
+          `chore(data): remove tag "${tag.name}" from resources`
+        );
+      }
       await commit("tags", "tags", (cur) => (cur as Tag[]).filter((t) => t.id !== id), `chore(data): delete tag ${id}`);
     },
     [commit]
@@ -444,6 +514,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       toast,
       dismissToast: () => setToast(null),
       reload: load,
+      githubConnected,
+      githubRepository,
+      saveSignal,
       createSpace,
       updateSpace,
       deleteSpaceForever,
@@ -454,6 +527,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       updateResource,
       deleteResourceForever,
       createTag,
+      renameTag,
       deleteTag,
       createQuickLink,
       updateQuickLink,
@@ -466,6 +540,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       store,
       toast,
       load,
+      githubConnected,
+      githubRepository,
+      saveSignal,
       createSpace,
       updateSpace,
       deleteSpaceForever,
@@ -476,6 +553,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       updateResource,
       deleteResourceForever,
       createTag,
+      renameTag,
       deleteTag,
       createQuickLink,
       updateQuickLink,

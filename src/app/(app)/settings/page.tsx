@@ -141,14 +141,10 @@ export default function SettingsPage() {
         )}
 
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={handleBackupNow}
-            disabled={busy !== null}
-            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
+          <button onClick={handleBackupNow} disabled={busy !== null} className="btn-pastel-primary">
             {busy === "backup" ? "Backing up…" : "Backup Now"}
           </button>
-          <a href="/diagnostics" className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700">
+          <a href="/diagnostics" className="btn-pastel-secondary">
             Test Connection
           </a>
         </div>

@@ -2,12 +2,72 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { ResourceGrid } from "@/components/resources/ResourceGrid";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
 import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { InlineEditableText } from "@/components/common/InlineEditableText";
+import { Collection } from "@/lib/validation/schemas";
+
+function CollectionPill({
+  collection,
+  active,
+  onSelect,
+}: {
+  collection: Collection;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  const { updateCollection } = useWorkspace();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(collection.name);
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={() => {
+          setEditing(false);
+          const trimmed = draft.trim();
+          if (trimmed && trimmed !== collection.name) updateCollection(collection.id, { name: trimmed });
+          else setDraft(collection.name);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") {
+            setDraft(collection.name);
+            setEditing(false);
+          }
+        }}
+        className="rounded-full border border-violet-300 px-3 py-1 text-sm dark:bg-neutral-800"
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`group flex items-center gap-1 rounded-full pl-3 pr-1.5 py-1 text-sm transition-colors ${
+        active
+          ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200"
+          : "border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+      }`}
+    >
+      <button onClick={onSelect}>{collection.name}</button>
+      <button
+        onClick={() => setEditing(true)}
+        aria-label={`Rename ${collection.name}`}
+        className="rounded p-0.5 opacity-0 hover:bg-black/10 group-hover:opacity-100"
+      >
+        <Pencil size={11} />
+      </button>
+    </div>
+  );
+}
 
 export function SpaceView({ spaceId }: { spaceId: string }) {
   const { spaces, collections, resources, updateSpace } = useWorkspace();
@@ -16,7 +76,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
   const selectedCollectionId = searchParams.get("collection");
 
   const [showNewCollection, setShowNewCollection] = useState(false);
-  const [editingSpace, setEditingSpace] = useState(false);
+  const [editingSpaceColor, setEditingSpaceColor] = useState(false);
   const [confirmArchiveSpace, setConfirmArchiveSpace] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
@@ -48,8 +108,14 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: space.color || "#a3a3a3" }} />
-          <h1 className="text-2xl font-semibold">{space.name}</h1>
+          <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: space.color || "#a3a3a3" }} />
+          <InlineEditableText
+            as="h1"
+            value={space.name}
+            onSave={(name) => updateSpace(spaceId, { name })}
+            className="text-2xl font-semibold px-1"
+            inputClassName="text-2xl font-semibold rounded border border-violet-300 px-1 dark:bg-neutral-800"
+          />
         </div>
         <div className="relative">
           <details className="group">
@@ -58,10 +124,10 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
             </summary>
             <div className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-neutral-200 bg-white py-1 text-sm shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
               <button
-                onClick={() => setEditingSpace(true)}
+                onClick={() => setEditingSpaceColor(true)}
                 className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
-                Rename / recolor
+                Change color
               </button>
               <button
                 onClick={() => updateSpace(spaceId, { pinned: !space.pinned })}
@@ -71,7 +137,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
               </button>
               <button
                 onClick={() => setConfirmArchiveSpace(true)}
-                className="block w-full px-3 py-1.5 text-left text-red-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                className="block w-full px-3 py-1.5 text-left text-rose-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 Archive Space
               </button>
@@ -83,30 +149,25 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => selectCollection(null)}
-          className={`rounded-full px-3 py-1 text-sm ${
+          className={`rounded-full px-3 py-1 text-sm transition-colors ${
             !selectedCollectionId
-              ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+              ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200"
               : "border border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
           }`}
         >
           All
         </button>
         {spaceCollections.map((c) => (
-          <button
+          <CollectionPill
             key={c.id}
-            onClick={() => selectCollection(c.id)}
-            className={`rounded-full px-3 py-1 text-sm ${
-              selectedCollectionId === c.id
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                : "border border-neutral-300 text-neutral-600 dark:border-neutral-700 dark:text-neutral-400"
-            }`}
-          >
-            {c.name}
-          </button>
+            collection={c}
+            active={selectedCollectionId === c.id}
+            onSelect={() => selectCollection(c.id)}
+          />
         ))}
         <button
           onClick={() => setShowNewCollection(true)}
-          className="flex items-center gap-1 rounded-full border border-dashed border-neutral-300 px-3 py-1 text-sm text-neutral-400 hover:border-neutral-400 hover:text-neutral-600 dark:border-neutral-700"
+          className="flex items-center gap-1 rounded-full border border-dashed border-neutral-300 px-3 py-1 text-sm text-neutral-400 hover:border-violet-300 hover:text-violet-700 dark:border-neutral-700"
         >
           <Plus size={14} /> Collection
         </button>
@@ -136,7 +197,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
           onCreated={(c) => selectCollection(c.id)}
         />
       )}
-      {editingSpace && <SpaceModal space={space} onClose={() => setEditingSpace(false)} />}
+      {editingSpaceColor && <SpaceModal space={space} onClose={() => setEditingSpaceColor(false)} />}
       {confirmArchiveSpace && (
         <ConfirmDialog
           title="Archive Space"

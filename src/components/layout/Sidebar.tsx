@@ -2,49 +2,120 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Archive,
-  LayoutDashboard,
-  Library,
-  ListTodo,
-  Plus,
-  Search,
-  Settings,
-  Star,
-  Tag as TagIcon,
-  Trash2,
-  Zap,
-} from "lucide-react";
-import { useWorkspace } from "@/lib/client/workspace-context";
 import { useState } from "react";
-import { SpaceModal } from "@/components/spaces/SpaceModal";
+import { GitBranch, ListTree, Menu, Plus, Search } from "lucide-react";
+import { useWorkspace } from "@/lib/client/workspace-context";
+import { navItems, NavPanel } from "@/components/layout/NavPanel";
+import { TreePanel } from "@/components/layout/TreePanel";
+import { GithubStatusPanel } from "@/components/layout/GithubStatusPanel";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/next", label: "Next", icon: ListTodo },
-  { href: "/quick-links", label: "Quick Links", icon: Zap },
-  { href: "/all", label: "All Resources", icon: Library },
-  { href: "/favorites", label: "Favorites", icon: Star },
-  { href: "/tags", label: "Tags", icon: TagIcon },
-  { href: "/archive", label: "Archive", icon: Archive },
-  { href: "/trash", label: "Trash", icon: Trash2 },
+type Tab = "nav" | "tree" | "github";
+
+const TABS: { id: Tab; label: string; icon: typeof Menu }[] = [
+  { id: "nav", label: "Nav", icon: Menu },
+  { id: "tree", label: "Tree", icon: ListTree },
+  { id: "github", label: "Connected to GitHub", icon: GitBranch },
 ];
 
 export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
   const pathname = usePathname();
-  const { spaces } = useWorkspace();
-  const [showNewSpace, setShowNewSpace] = useState(false);
+  const { githubConnected, saveSignal } = useWorkspace();
+  const [collapsed, setCollapsed] = useState(false);
+  const [tab, setTab] = useState<Tab>("nav");
 
-  const visibleSpaces = spaces
-    .filter((s) => !s.trash && !s.archived)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const dotColor =
+    githubConnected === null ? "bg-neutral-400" : githubConnected ? "bg-emerald-500" : "bg-rose-500";
+
+  if (collapsed) {
+    return (
+      <nav className="flex h-full w-14 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-50 py-3 dark:border-neutral-800 dark:bg-neutral-950">
+        <button
+          onClick={() => setCollapsed(false)}
+          aria-label="Expand sidebar"
+          className="rounded-md p-2 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+        >
+          <Menu size={18} />
+        </button>
+        <button
+          onClick={onAddResource}
+          aria-label="Add Resource"
+          title="Add Resource"
+          className="mt-3 rounded-md bg-violet-100 p-2 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
+        >
+          <Plus size={16} />
+        </button>
+        <div className="mt-3 flex flex-col items-center gap-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={`rounded-md p-2 ${
+                  active
+                    ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
+                    : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                }`}
+              >
+                <Icon size={16} />
+              </Link>
+            );
+          })}
+        </div>
+        <span
+          key={saveSignal}
+          title={githubConnected ? "Connected to GitHub" : "Not connected"}
+          className={`save-pulse mt-auto h-2.5 w-2.5 shrink-0 rounded-full ${dotColor}`}
+        />
+      </nav>
+    );
+  }
 
   return (
     <nav className="flex h-full w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex items-center gap-1 border-b border-neutral-200 p-2 dark:border-neutral-800">
+        <button
+          onClick={() => setCollapsed(true)}
+          aria-label="Collapse sidebar"
+          className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+        >
+          <Menu size={16} />
+        </button>
+        <div className="flex flex-1 rounded-md bg-neutral-200/60 p-0.5 dark:bg-neutral-900">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                title={t.label}
+                aria-label={t.label}
+                className={`relative flex flex-1 items-center justify-center gap-1 rounded px-1.5 py-1 text-xs transition-colors ${
+                  active
+                    ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-white"
+                    : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                }`}
+              >
+                <Icon size={13} />
+                {t.id === "github" && (
+                  <span
+                    key={saveSignal}
+                    className={`save-pulse absolute right-1 top-1 h-1.5 w-1.5 rounded-full ${dotColor}`}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="space-y-2 p-3">
         <button
           onClick={onAddResource}
-          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+          className="flex w-full items-center justify-center gap-1.5 rounded-md bg-violet-100 px-3 py-2 text-sm font-medium text-violet-800 transition-colors hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
         >
           <Plus size={16} /> Add Resource
         </button>
@@ -59,78 +130,11 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <ul className="space-y-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm ${
-                    active
-                      ? "bg-neutral-200 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-white"
-                      : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-900"
-                  }`}
-                >
-                  <Icon size={16} /> {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="mt-4 flex items-center justify-between px-2.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">
-            Spaces
-          </span>
-          <button
-            onClick={() => setShowNewSpace(true)}
-            aria-label="New Space"
-            className="rounded p-0.5 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-        <ul className="mt-1 space-y-0.5">
-          {visibleSpaces.map((space) => {
-            const active = pathname === `/space/${space.id}`;
-            return (
-              <li key={space.id}>
-                <Link
-                  href={`/space/${space.id}`}
-                  className={`flex items-center gap-2.5 truncate rounded-md px-2.5 py-1.5 text-sm ${
-                    active
-                      ? "bg-neutral-200 font-medium text-neutral-900 dark:bg-neutral-800 dark:text-white"
-                      : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-900"
-                  }`}
-                >
-                  <span
-                    className="inline-block h-2 w-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: space.color || "#a3a3a3" }}
-                  />
-                  <span className="truncate">{space.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-          {visibleSpaces.length === 0 && (
-            <li className="px-2.5 py-1 text-xs text-neutral-400">No spaces yet</li>
-          )}
-        </ul>
+      <div className="flex-1 overflow-y-auto">
+        {tab === "nav" && <NavPanel />}
+        {tab === "tree" && <TreePanel />}
+        {tab === "github" && <GithubStatusPanel />}
       </div>
-
-      <div className="border-t border-neutral-200 p-2 dark:border-neutral-800">
-        <Link
-          href="/settings"
-          className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-900"
-        >
-          <Settings size={16} /> Settings
-        </Link>
-      </div>
-
-      {showNewSpace && <SpaceModal onClose={() => setShowNewSpace(false)} />}
     </nav>
   );
 }
