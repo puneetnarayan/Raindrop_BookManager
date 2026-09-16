@@ -17,17 +17,32 @@ export default function TrashPage() {
     deleteResourceForever,
     deleteCollectionForever,
     deleteSpaceForever,
+    bulkUpdateResources,
+    bulkDeleteResourcesForever,
   } = useWorkspace();
 
   const [pendingDelete, setPendingDelete] = useState<
     { kind: "resource" | "collection" | "space"; id: string; label: string } | null
   >(null);
   const [deleting, setDeleting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const trashedResources = resources.filter((r) => r.trash);
   const trashedCollections = collections.filter((c) => c.trash);
   const trashedSpaces = spaces.filter((s) => s.trash);
   const isEmpty = trashedResources.length + trashedCollections.length + trashedSpaces.length === 0;
+  const selectedIds = Array.from(selected).filter((id) => trashedResources.some((r) => r.id === id));
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -42,6 +57,32 @@ export default function TrashPage() {
       // toast shown by context; leave dialog open so the user can retry
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleBulkRestore() {
+    setBulkBusy(true);
+    try {
+      await bulkUpdateResources(selectedIds, () => ({ trash: false }));
+      setSelected(new Set());
+    } catch {
+      // toast shown by context
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkDeleteForever() {
+    setBulkBusy(true);
+    try {
+      await apiCreateBackup("before-bulk-permanent-delete");
+      await bulkDeleteResourcesForever(selectedIds);
+      setSelected(new Set());
+    } catch {
+      // toast shown by context
+    } finally {
+      setBulkBusy(false);
+      setConfirmBulkDelete(false);
     }
   }
 
@@ -100,12 +141,38 @@ export default function TrashPage() {
       )}
 
       {trashedResources.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-400">Resources</h2>
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">Resources</h2>
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-medium text-violet-800 dark:text-violet-200">
+                  {selectedIds.length} selected
+                </span>
+                <button onClick={handleBulkRestore} disabled={bulkBusy} className="btn-pastel-primary-sm">
+                  {bulkBusy ? "Restoring…" : "Bulk restore"}
+                </button>
+                <button
+                  onClick={() => setConfirmBulkDelete(true)}
+                  disabled={bulkBusy}
+                  className="btn-pastel-danger !px-2.5 !py-1 text-xs"
+                >
+                  Delete forever
+                </button>
+              </div>
+            )}
+          </div>
           <ul className="space-y-1">
             {trashedResources.map((r) => (
               <li key={r.id} className="flex items-center justify-between rounded border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
-                <span className="truncate">{r.title || r.url}</span>
+                <label className="flex flex-1 items-center gap-2 truncate">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => toggleSelected(r.id)}
+                  />
+                  <span className="truncate">{r.title || r.url}</span>
+                </label>
                 <div className="flex shrink-0 gap-3">
                   <button onClick={() => updateResource(r.id, { trash: false })} className="flex items-center gap-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-white">
                     <RotateCcw size={14} /> Restore
@@ -131,6 +198,17 @@ export default function TrashPage() {
           danger
           onConfirm={confirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {confirmBulkDelete && (
+        <ConfirmDialog
+          title="Delete permanently"
+          message={`A backup snapshot is taken first. Permanently delete ${selectedIds.length} resource(s)? This cannot be undone from the app.`}
+          confirmLabel={bulkBusy ? "Deleting…" : "Delete forever"}
+          danger
+          onConfirm={handleBulkDeleteForever}
+          onCancel={() => setConfirmBulkDelete(false)}
         />
       )}
     </div>

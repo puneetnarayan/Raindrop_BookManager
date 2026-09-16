@@ -7,7 +7,17 @@ import { useWorkspace } from "@/lib/client/workspace-context";
 import { pastelTint } from "@/lib/client/colors";
 import { EditResourceModal } from "@/components/resources/EditResourceModal";
 
-export function ResourceCard({ resource }: { resource: Resource }) {
+export function ResourceCard({
+  resource,
+  selectable,
+  selected,
+  onToggleSelect,
+}: {
+  resource: Resource;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}) {
   const { updateResource, spaces } = useWorkspace();
   const [busy, setBusy] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -37,6 +47,18 @@ export function ResourceCard({ resource }: { resource: Resource }) {
     >
       {/* Darkens the whole card on hover, darker still while clicking — no per-color dark variant needed. */}
       <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/[0.06] group-active:bg-black/[0.14]" />
+
+      {selectable && (
+        <label className="absolute left-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded bg-white/90 shadow dark:bg-neutral-900/90">
+          <input
+            type="checkbox"
+            checked={!!selected}
+            onChange={onToggleSelect}
+            aria-label={`Select ${resource.title || resource.url}`}
+            className="h-3.5 w-3.5"
+          />
+        </label>
+      )}
 
       <a
         href={resource.url}

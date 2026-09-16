@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { createBackup, ApiError } from "@/lib/client/api";
 import { RefreshCw } from "lucide-react";
+import { downloadFile } from "@/lib/client/download";
+import { buildFullExport } from "@/lib/export/exportJson";
+import { resourcesToCsv } from "@/lib/export/exportCsv";
+import { resourcesToBookmarksHtml } from "@/lib/export/exportBookmarksHtml";
 
 interface StatusResponse {
   connected: boolean;
@@ -20,7 +24,7 @@ interface BackupEntry {
 }
 
 export default function SettingsPage() {
-  const { settings, updateSettings } = useWorkspace();
+  const { settings, updateSettings, spaces, collections, resources, tags, quickLinks } = useWorkspace();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [backups, setBackups] = useState<BackupEntry[]>([]);
@@ -81,6 +85,25 @@ export default function SettingsPage() {
       setBusy(null);
       setRestoreTarget(null);
     }
+  }
+
+  function dateStamp() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function exportAllJson() {
+    const payload = buildFullExport(spaces, collections, resources, tags, quickLinks);
+    downloadFile(`bookmanager-export-${dateStamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
+  }
+
+  function exportAllCsv() {
+    const csv = resourcesToCsv(resources, spaces, collections);
+    downloadFile(`bookmanager-resources-${dateStamp()}.csv`, csv, "text/csv");
+  }
+
+  function exportAllBookmarksHtml() {
+    const html = resourcesToBookmarksHtml(spaces, collections, resources);
+    downloadFile(`bookmanager-bookmarks-${dateStamp()}.html`, html, "text/html");
   }
 
   return (
@@ -184,6 +207,36 @@ export default function SettingsPage() {
             </ul>
           )}
         </div>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">Export</h2>
+        <p className="text-sm text-neutral-500">
+          Export everything in this workspace. To export just one Space or Collection, use the
+          Export option in its own menu.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={exportAllJson} className="btn-pastel-secondary">
+            Export all (JSON)
+          </button>
+          <button onClick={exportAllCsv} className="btn-pastel-secondary">
+            Export resources (CSV)
+          </button>
+          <button onClick={exportAllBookmarksHtml} className="btn-pastel-secondary">
+            Export bookmarks (HTML)
+          </button>
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">Import</h2>
+        <p className="text-sm text-neutral-500">
+          Import browser bookmarks or a previous JSON export, with a preview before anything is
+          written.
+        </p>
+        <a href="/import" className="btn-pastel-secondary inline-block">
+          Go to Import
+        </a>
       </section>
     </div>
   );

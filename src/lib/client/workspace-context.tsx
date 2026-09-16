@@ -71,6 +71,17 @@ interface WorkspaceContextValue {
   createResource: (input: Partial<Resource> & { url: string; spaceId: string; collectionId: string }) => Promise<Resource>;
   updateResource: (id: string, patch: Partial<Resource>) => Promise<void>;
   deleteResourceForever: (id: string) => Promise<void>;
+  /** Applies `updater(resource)` to every matching resource in a single write. */
+  bulkUpdateResources: (ids: string[], updater: (r: Resource) => Partial<Resource>) => Promise<void>;
+  bulkDeleteResourcesForever: (ids: string[]) => Promise<void>;
+
+  /** Appends already-constructed entities from an import in one write per file. */
+  bulkImport: (payload: {
+    spaces?: Space[];
+    collections?: Collection[];
+    resources?: Resource[];
+    tags?: Tag[];
+  }) => Promise<void>;
 
   createTag: (name: string) => Promise<Tag>;
   renameTag: (id: string, newName: string) => Promise<void>;
@@ -100,6 +111,7 @@ const EMPTY: WorkspaceData = {
       dateFormat: "YYYY-MM-DD",
       timeFormat: "24h",
       linkCheckTimeoutMs: 8000,
+      ignoredDuplicateGroupKeys: [],
     },
     sha: null,
   },
@@ -389,6 +401,72 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [commit]
   );
 
+  const bulkUpdateResources = useCallback<WorkspaceContextValue["bulkUpdateResources"]>(
+    async (ids, updater) => {
+      const idSet = new Set(ids);
+      await commit(
+        "resources",
+        "resources",
+        (cur) =>
+          (cur as Resource[]).map((r) =>
+            idSet.has(r.id) ? { ...r, ...updater(r), updatedAt: now() } : r
+          ),
+        `chore(data): bulk update ${ids.length} resource(s)`
+      );
+    },
+    [commit]
+  );
+
+  const bulkDeleteResourcesForever = useCallback<WorkspaceContextValue["bulkDeleteResourcesForever"]>(
+    async (ids) => {
+      const idSet = new Set(ids);
+      await commit(
+        "resources",
+        "resources",
+        (cur) => (cur as Resource[]).filter((r) => !idSet.has(r.id)),
+        `chore(data): permanently delete ${ids.length} resource(s)`
+      );
+    },
+    [commit]
+  );
+
+  const bulkImport = useCallback<WorkspaceContextValue["bulkImport"]>(
+    async (payload) => {
+      if (payload.spaces?.length) {
+        await commit("spaces", "spaces", (cur) => [...(cur as Space[]), ...payload.spaces!], `feat(data): import ${payload.spaces.length} space(s)`);
+      }
+      if (payload.collections?.length) {
+        await commit(
+          "collections",
+          "collections",
+          (cur) => [...(cur as Collection[]), ...payload.collections!],
+          `feat(data): import ${payload.collections.length} collection(s)`
+        );
+      }
+      if (payload.tags?.length) {
+        await commit(
+          "tags",
+          "tags",
+          (cur) => {
+            const existingNames = new Set((cur as Tag[]).map((t) => t.name.toLowerCase()));
+            const toAdd = payload.tags!.filter((t) => !existingNames.has(t.name.toLowerCase()));
+            return [...(cur as Tag[]), ...toAdd];
+          },
+          `feat(data): import ${payload.tags.length} tag(s)`
+        );
+      }
+      if (payload.resources?.length) {
+        await commit(
+          "resources",
+          "resources",
+          (cur) => [...payload.resources!, ...(cur as Resource[])],
+          `feat(data): import ${payload.resources.length} resource(s)`
+        );
+      }
+    },
+    [commit]
+  );
+
   // --- Tags ---
   const createTag = useCallback<WorkspaceContextValue["createTag"]>(
     async (name) => {
@@ -536,6 +614,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       createResource,
       updateResource,
       deleteResourceForever,
+      bulkUpdateResources,
+      bulkDeleteResourcesForever,
+      bulkImport,
       createTag,
       renameTag,
       deleteTag,
@@ -562,6 +643,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       createResource,
       updateResource,
       deleteResourceForever,
+      bulkUpdateResources,
+      bulkDeleteResourcesForever,
+      bulkImport,
       createTag,
       renameTag,
       deleteTag,

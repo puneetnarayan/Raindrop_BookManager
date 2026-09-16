@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, MoreHorizontal, NotebookText, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
 import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -14,6 +14,8 @@ import { MarkdownEditor } from "@/components/common/MarkdownEditor";
 import { MarkdownView } from "@/components/common/MarkdownView";
 import { Modal } from "@/components/common/Modal";
 import { Collection, Space } from "@/lib/validation/schemas";
+import { downloadFile } from "@/lib/client/download";
+import { buildCollectionExport, buildSpaceExport } from "@/lib/export/exportJson";
 
 function CollectionPill({
   collection,
@@ -24,7 +26,7 @@ function CollectionPill({
   active: boolean;
   onSelect: () => void;
 }) {
-  const { updateCollection, resources } = useWorkspace();
+  const { updateCollection, resources, spaces, collections, tags } = useWorkspace();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(collection.name);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -40,6 +42,15 @@ function CollectionPill({
     }
   }
 
+  function exportCollection() {
+    const payload = buildCollectionExport(collection.id, spaces, collections, resources, tags);
+    downloadFile(
+      `${collection.name.replace(/[^a-z0-9-]+/gi, "-")}-export.json`,
+      JSON.stringify(payload, null, 2),
+      "application/json"
+    );
+  }
+
   const menuItems: ContextMenuItem[] = [
     {
       label: `Open all links (${collectionResources.length})`,
@@ -47,6 +58,7 @@ function CollectionPill({
     },
     { label: "Rename", onClick: () => setEditing(true) },
     { label: "Edit description & notes", onClick: () => setShowEditModal(true) },
+    { label: "Export (JSON)", onClick: exportCollection },
   ];
 
   if (editing) {
@@ -148,7 +160,7 @@ function SpaceNotesModal({ space, onClose }: { space: Space; onClose: () => void
 }
 
 export function SpaceView({ spaceId }: { spaceId: string }) {
-  const { spaces, collections, resources, updateSpace } = useWorkspace();
+  const { spaces, collections, resources, tags, updateSpace } = useWorkspace();
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedCollectionId = searchParams.get("collection");
@@ -181,6 +193,15 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
     if (id) params.set("collection", id);
     else params.delete("collection");
     router.push(`/space/${spaceId}?${params.toString()}`);
+  }
+
+  function exportSpace() {
+    const payload = buildSpaceExport(spaceId, spaces, collections, resources, tags);
+    downloadFile(
+      `${space!.name.replace(/[^a-z0-9-]+/gi, "-")}-export.json`,
+      JSON.stringify(payload, null, 2),
+      "application/json"
+    );
   }
 
   return (
@@ -219,6 +240,12 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
                 className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 Edit notes
+              </button>
+              <button
+                onClick={exportSpace}
+                className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Export (JSON)
               </button>
               <button
                 onClick={() => setConfirmArchiveSpace(true)}
@@ -291,7 +318,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
           );
         })()}
 
-      <ResourceGrid
+      <SelectableResourceGrid
         resources={visibleResources}
         emptyLabel={
           spaceCollections.length === 0

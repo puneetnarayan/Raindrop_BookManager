@@ -154,6 +154,8 @@ export const SettingsSchema = z.object({
   dateFormat: z.string().default("YYYY-MM-DD"),
   timeFormat: z.enum(["12h", "24h"]).default("24h"),
   linkCheckTimeoutMs: z.number().default(8000),
+  /** Normalized-URL group keys the user has explicitly said are not duplicates. */
+  ignoredDuplicateGroupKeys: z.array(z.string()).default([]),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

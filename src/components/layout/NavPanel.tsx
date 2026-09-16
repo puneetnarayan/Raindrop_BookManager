@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Archive,
+  CopyCheck,
   LayoutDashboard,
   Library,
   ListTodo,
@@ -12,6 +13,7 @@ import {
   Star,
   Tag as TagIcon,
   Trash2,
+  Upload,
   Zap,
 } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
@@ -23,6 +25,8 @@ export const navItems = [
   { href: "/all", label: "All Resources", icon: Library },
   { href: "/favorites", label: "Favorites", icon: Star },
   { href: "/tags", label: "Tags", icon: TagIcon },
+  { href: "/duplicates", label: "Duplicates", icon: CopyCheck },
+  { href: "/import", label: "Import", icon: Upload },
   { href: "/archive", label: "Archive", icon: Archive },
   { href: "/trash", label: "Trash", icon: Trash2 },
 ];

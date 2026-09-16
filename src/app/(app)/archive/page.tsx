@@ -1,7 +1,7 @@
 "use client";
 
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { ArchiveRestore } from "lucide-react";
 
 export default function ArchivePage() {
@@ -61,12 +61,11 @@ export default function ArchivePage() {
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-400">
           Resources
         </h2>
-        <ResourceGrid resources={archivedResources} emptyLabel="Nothing archived yet." />
-        {archivedResources.length > 0 && (
-          <p className="mt-2 text-xs text-neutral-400">
-            Hover a card and use the archive icon to restore it.
-          </p>
-        )}
+        <SelectableResourceGrid
+          resources={archivedResources}
+          context="archive"
+          emptyLabel="Nothing archived yet."
+        />
       </section>
     </div>
   );
