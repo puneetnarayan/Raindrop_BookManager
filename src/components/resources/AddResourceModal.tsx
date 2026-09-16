@@ -7,23 +7,10 @@ import { fetchUrlMetadata } from "@/lib/client/api";
 import { Loader2 } from "lucide-react";
 import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
+import { normalizeUrl } from "@/lib/client/url";
 
 const NEW_SPACE = "__new_space__";
 const NEW_COLLECTION = "__new_collection__";
-
-function normalizeUrl(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  try {
-    const u = new URL(withScheme);
-    // Strip a trailing slash on a bare path, a harmless normalization.
-    if (u.pathname === "/") u.pathname = "";
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
 
 export function AddResourceModal({
   defaultSpaceId,

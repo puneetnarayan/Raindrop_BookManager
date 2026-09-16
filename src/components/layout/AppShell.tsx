@@ -6,12 +6,14 @@ import { useWorkspace } from "@/lib/client/workspace-context";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toast } from "@/components/common/Toast";
 import { AddResourceModal } from "@/components/resources/AddResourceModal";
+import { SaveSessionModal } from "@/components/resources/SaveSessionModal";
 import { KeyboardShortcutsHelp } from "@/components/layout/KeyboardShortcutsHelp";
 import { useGlobalShortcuts } from "@/lib/client/shortcuts";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { loadState, loadError, reload } = useWorkspace();
   const [showAddResource, setShowAddResource] = useState(false);
+  const [showSaveSession, setShowSaveSession] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
 
   useGlobalShortcuts({
@@ -51,10 +53,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50">
-      <Sidebar onAddResource={() => setShowAddResource(true)} />
+      <Sidebar
+        onAddResource={() => setShowAddResource(true)}
+        onSaveSession={() => setShowSaveSession(true)}
+      />
       <main className="flex-1 overflow-y-auto">{children}</main>
       <Toast />
       {showAddResource && <AddResourceModal onClose={() => setShowAddResource(false)} />}
+      {showSaveSession && <SaveSessionModal onClose={() => setShowSaveSession(false)} />}
       {showShortcutsHelp && <KeyboardShortcutsHelp onClose={() => setShowShortcutsHelp(false)} />}
     </div>
   );

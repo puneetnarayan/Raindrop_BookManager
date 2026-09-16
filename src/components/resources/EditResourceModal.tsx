@@ -9,22 +9,10 @@ import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
 import { Resource } from "@/lib/validation/schemas";
 import { MarkdownEditor } from "@/components/common/MarkdownEditor";
+import { normalizeUrl } from "@/lib/client/url";
 
 const NEW_SPACE = "__new_space__";
 const NEW_COLLECTION = "__new_collection__";
-
-function normalizeUrl(input: string): string | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  try {
-    const u = new URL(withScheme);
-    if (u.pathname === "/") u.pathname = "";
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
 
 export function EditResourceModal({ resource, onClose }: { resource: Resource; onClose: () => void }) {
   const { spaces, collections, updateResource, createTag } = useWorkspace();

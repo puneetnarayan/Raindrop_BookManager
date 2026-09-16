@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GitBranch, Home, ListTree, Menu, Plus, Search } from "lucide-react";
+import { Camera, GitBranch, Home, ListTree, Menu, Plus, Search } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { navItems, NavPanel } from "@/components/layout/NavPanel";
 import { TreePanel } from "@/components/layout/TreePanel";
@@ -19,7 +19,13 @@ const TABS: { id: Tab; label: string; icon: typeof Menu }[] = [
   { id: "github", label: "Connected to GitHub", icon: GitBranch },
 ];
 
-export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
+export function Sidebar({
+  onAddResource,
+  onSaveSession,
+}: {
+  onAddResource: () => void;
+  onSaveSession: () => void;
+}) {
   const pathname = usePathname();
   const { githubConnected, saveSignal } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false);
@@ -65,6 +71,14 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
         className="mt-3 rounded-md bg-violet-100 p-2 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
       >
         <Plus size={16} />
+      </button>
+      <button
+        onClick={onSaveSession}
+        aria-label="Save Session"
+        title="Save Session as Collection"
+        className="mt-2 rounded-md p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+      >
+        <Camera size={16} />
       </button>
       <div className="mt-3 flex flex-col items-center gap-1 overflow-y-auto">
         {navItems.map((item) => {
@@ -150,6 +164,12 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
           className="flex w-full items-center justify-center gap-1.5 rounded-md bg-violet-100 px-3 py-2 text-sm font-medium text-violet-800 transition-colors hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
         >
           <Plus size={16} /> Add Resource
+        </button>
+        <button
+          onClick={onSaveSession}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+        >
+          <Camera size={14} /> Save Session
         </button>
         <Link
           href="/search"
