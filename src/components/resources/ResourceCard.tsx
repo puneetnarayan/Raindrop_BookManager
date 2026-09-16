@@ -60,6 +60,8 @@ export function ResourceCard({ resource }: { resource: Resource }) {
           <img
             src={resource.thumbnail}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-32 w-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
@@ -79,6 +81,8 @@ export function ResourceCard({ resource }: { resource: Resource }) {
             <img
               src={resource.favicon}
               alt=""
+              loading="lazy"
+              decoding="async"
               className="mt-0.5 h-4 w-4 shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.visibility = "hidden";

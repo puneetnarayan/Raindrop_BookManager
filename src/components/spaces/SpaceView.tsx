@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { ResourceGrid } from "@/components/resources/ResourceGrid";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
@@ -200,13 +200,28 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
         </button>
       </div>
 
-      {selectedCollectionId &&
-        (() => {
-          const c = spaceCollections.find((sc) => sc.id === selectedCollectionId);
-          return c?.description ? (
-            <p className="text-sm text-neutral-500">{c.description}</p>
-          ) : null;
-        })()}
+      {selectedCollectionId && (
+        <div className="flex items-center justify-between gap-3">
+          {(() => {
+            const c = spaceCollections.find((sc) => sc.id === selectedCollectionId);
+            return c?.description ? (
+              <p className="text-sm text-neutral-500">{c.description}</p>
+            ) : (
+              <span />
+            );
+          })()}
+          {visibleResources.length > 0 && (
+            <button
+              onClick={() => {
+                for (const r of visibleResources) window.open(r.url, "_blank", "noopener,noreferrer");
+              }}
+              className="btn-pastel-secondary flex shrink-0 items-center gap-1.5"
+            >
+              <ExternalLink size={14} /> Open all ({visibleResources.length})
+            </button>
+          )}
+        </div>
+      )}
 
       <ResourceGrid
         resources={visibleResources}

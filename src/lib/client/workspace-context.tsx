@@ -163,8 +163,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Generic optimistic-write helper: applies `updater` to the current slice,
-   * writes it, and on success commits the new sha. On a 409 conflict, reloads
+   * Generic optimistic-write helper: applies `updater` to the current slice
+   * and reflects it in the UI immediately (before the network round-trip),
+   * so actions like toggling favorite/pin/archive feel instant. The write to
+   * GitHub happens in the background; on success the real sha is committed,
+   * on failure the optimistic change is rolled back. On a 409 conflict, reloads
    * the latest remote version, surfaces a toast, and re-throws so the caller
    * can decide whether to retry against fresh state.
    */
@@ -176,9 +179,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       message: string
     ) => {
       const slice = storeRef.current[sliceKey] as FileSlice<unknown>;
-      const nextData = updater(slice.data);
+      const previousData = slice.data;
+      const previousSha = slice.sha;
+      const nextData = updater(previousData);
+
+      setStore((prev) => ({ ...prev, [sliceKey]: { data: nextData, sha: previousSha } }));
+
       try {
-        const { sha } = await writeFile(key, nextData as never, slice.sha, message);
+        const { sha } = await writeFile(key, nextData as never, previousSha, message);
         setStore((prev) => ({
           ...prev,
           [sliceKey]: { data: nextData, sha },
@@ -187,6 +195,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         setGithubConnected(true);
         return nextData;
       } catch (err) {
+        setStore((prev) => ({ ...prev, [sliceKey]: { data: previousData, sha: previousSha } }));
         if (err instanceof ConflictError) {
           const fresh = await readFile(key);
           setStore((prev) => ({ ...prev, [sliceKey]: fresh }));
@@ -195,6 +204,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           );
         } else if (err instanceof ApiError) {
           showToast(err.message);
+          setGithubConnected(false);
         }
         throw err;
       }

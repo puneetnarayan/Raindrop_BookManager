@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { GitBranch, ListTree, Menu, Plus, Search } from "lucide-react";
+import { GitBranch, Home, ListTree, Menu, Plus, Search } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { navItems, NavPanel } from "@/components/layout/NavPanel";
 import { TreePanel } from "@/components/layout/TreePanel";
@@ -36,6 +36,18 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
         >
           <Menu size={18} />
         </button>
+        <Link
+          href="/"
+          aria-label="Home"
+          title="Home"
+          className={`mt-1 rounded-md p-2 ${
+            pathname === "/"
+              ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
+              : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+          }`}
+        >
+          <Home size={16} />
+        </Link>
         <button
           onClick={onAddResource}
           aria-label="Add Resource"
@@ -83,6 +95,18 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
         >
           <Menu size={16} />
         </button>
+        <Link
+          href="/"
+          aria-label="Home"
+          title="Home"
+          className={`rounded-md p-1.5 ${
+            pathname === "/"
+              ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
+              : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+          }`}
+        >
+          <Home size={16} />
+        </Link>
         <div className="flex flex-1 rounded-md bg-neutral-200/60 p-0.5 dark:bg-neutral-900">
           {TABS.map((t) => {
             const Icon = t.icon;

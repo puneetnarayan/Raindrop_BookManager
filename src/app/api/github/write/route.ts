@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getFile } from "@/lib/github/client";
 import { writeData } from "@/lib/data/store";
 import { DATA_FILES, isDataFileKey } from "@/lib/data/files";
@@ -43,18 +43,21 @@ export async function POST(request: NextRequest) {
       message: body.message,
     });
 
-    // Best-effort: record last write time. Never fail the primary write over this.
-    try {
-      const meta = await getFile(DATA_FILES.metadata.path);
-      const parsed = meta ? JSON.parse(meta.content) : {};
-      await writeData(
-        "metadata",
-        { ...parsed, lastWriteAt: new Date().toISOString(), schemaVersion: parsed.schemaVersion ?? 1 },
-        { expectedSha: meta?.sha ?? null, message: "chore(data): record last write time" }
-      );
-    } catch {
-      // non-fatal
-    }
+    // Record last-write-time after the response is sent, so bookkeeping never
+    // adds a second GitHub round-trip to the latency of every user action.
+    after(async () => {
+      try {
+        const meta = await getFile(DATA_FILES.metadata.path);
+        const parsed = meta ? JSON.parse(meta.content) : {};
+        await writeData(
+          "metadata",
+          { ...parsed, lastWriteAt: new Date().toISOString(), schemaVersion: parsed.schemaVersion ?? 1 },
+          { expectedSha: meta?.sha ?? null, message: "chore(data): record last write time" }
+        );
+      } catch {
+        // non-fatal
+      }
+    });
 
     return NextResponse.json({ file: body.file, sha: result.sha, commitSha: result.commitSha });
   } catch (err) {
