@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
 import { Resource } from "@/lib/validation/schemas";
+import { MarkdownEditor } from "@/components/common/MarkdownEditor";
 
 const NEW_SPACE = "__new_space__";
 const NEW_COLLECTION = "__new_collection__";
@@ -219,12 +220,7 @@ export function EditResourceModal({ resource, onClose }: { resource: Resource; o
 
         <div>
           <label className="mb-1 block text-sm font-medium">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800"
-          />
+          <MarkdownEditor value={notes} onChange={setNotes} rows={4} placeholder="Add notes about this resource…" />
         </div>
 
         <div className="flex gap-4 text-sm">

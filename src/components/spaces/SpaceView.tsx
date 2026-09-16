@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { ExternalLink, MoreHorizontal, NotebookText, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { ResourceGrid } from "@/components/resources/ResourceGrid";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
@@ -10,7 +10,10 @@ import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { InlineEditableText } from "@/components/common/InlineEditableText";
 import { ContextMenu, ContextMenuItem } from "@/components/common/ContextMenu";
-import { Collection } from "@/lib/validation/schemas";
+import { MarkdownEditor } from "@/components/common/MarkdownEditor";
+import { MarkdownView } from "@/components/common/MarkdownView";
+import { Modal } from "@/components/common/Modal";
+import { Collection, Space } from "@/lib/validation/schemas";
 
 function CollectionPill({
   collection,
@@ -25,6 +28,7 @@ function CollectionPill({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(collection.name);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const collectionResources = resources.filter(
     (r) => r.collectionId === collection.id && !r.trash && !r.archived
@@ -42,6 +46,7 @@ function CollectionPill({
       onClick: openAllLinks,
     },
     { label: "Rename", onClick: () => setEditing(true) },
+    { label: "Edit description & notes", onClick: () => setShowEditModal(true) },
   ];
 
   if (editing) {
@@ -83,8 +88,17 @@ function CollectionPill({
     >
       <button onClick={onSelect}>{collection.name}</button>
       <button
+        onClick={() => setShowEditModal(true)}
+        aria-label={`Edit ${collection.name}`}
+        title="Edit description & notes"
+        className="rounded p-0.5 opacity-0 hover:bg-black/10 group-hover:opacity-100"
+      >
+        <NotebookText size={11} />
+      </button>
+      <button
         onClick={() => setEditing(true)}
         aria-label={`Rename ${collection.name}`}
+        title="Rename"
         className="rounded p-0.5 opacity-0 hover:bg-black/10 group-hover:opacity-100"
       >
         <Pencil size={11} />
@@ -92,7 +106,44 @@ function CollectionPill({
       {menuPos && (
         <ContextMenu x={menuPos.x} y={menuPos.y} items={menuItems} onClose={() => setMenuPos(null)} />
       )}
+      {showEditModal && (
+        <CollectionModal collection={collection} spaceId={collection.spaceId} onClose={() => setShowEditModal(false)} />
+      )}
     </div>
+  );
+}
+
+function SpaceNotesModal({ space, onClose }: { space: Space; onClose: () => void }) {
+  const { updateSpace } = useWorkspace();
+  const [notes, setNotes] = useState(space.notes ?? "");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateSpace(space.id, { notes: notes.trim() || undefined });
+      onClose();
+    } catch {
+      // toast already shown
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={`Notes — ${space.name}`} onClose={onClose} wide>
+      <div className="space-y-4">
+        <MarkdownEditor value={notes} onChange={setNotes} rows={8} placeholder="Notes for this Space…" />
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="btn-pastel-secondary">
+            Cancel
+          </button>
+          <button type="submit" onClick={handleSave} disabled={saving} className="btn-pastel-primary">
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -104,6 +155,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
 
   const [showNewCollection, setShowNewCollection] = useState(false);
   const [editingSpaceColor, setEditingSpaceColor] = useState(false);
+  const [editingSpaceNotes, setEditingSpaceNotes] = useState(false);
   const [confirmArchiveSpace, setConfirmArchiveSpace] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
@@ -163,6 +215,12 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
                 {space.pinned ? "Unpin" : "Pin"} Space
               </button>
               <button
+                onClick={() => setEditingSpaceNotes(true)}
+                className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                Edit notes
+              </button>
+              <button
                 onClick={() => setConfirmArchiveSpace(true)}
                 className="block w-full px-3 py-1.5 text-left text-rose-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
@@ -172,6 +230,12 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
           </details>
         </div>
       </div>
+
+      {space.notes && (
+        <div className="rounded-md bg-black/[0.03] p-3 dark:bg-white/5">
+          <MarkdownView content={space.notes} />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -200,28 +264,32 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
         </button>
       </div>
 
-      {selectedCollectionId && (
-        <div className="flex items-center justify-between gap-3">
-          {(() => {
-            const c = spaceCollections.find((sc) => sc.id === selectedCollectionId);
-            return c?.description ? (
-              <p className="text-sm text-neutral-500">{c.description}</p>
-            ) : (
-              <span />
-            );
-          })()}
-          {visibleResources.length > 0 && (
-            <button
-              onClick={() => {
-                for (const r of visibleResources) window.open(r.url, "_blank", "noopener,noreferrer");
-              }}
-              className="btn-pastel-secondary flex shrink-0 items-center gap-1.5"
-            >
-              <ExternalLink size={14} /> Open all ({visibleResources.length})
-            </button>
-          )}
-        </div>
-      )}
+      {selectedCollectionId &&
+        (() => {
+          const c = spaceCollections.find((sc) => sc.id === selectedCollectionId);
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                {c?.description ? <p className="text-sm text-neutral-500">{c.description}</p> : <span />}
+                {visibleResources.length > 0 && (
+                  <button
+                    onClick={() => {
+                      for (const r of visibleResources) window.open(r.url, "_blank", "noopener,noreferrer");
+                    }}
+                    className="btn-pastel-secondary flex shrink-0 items-center gap-1.5"
+                  >
+                    <ExternalLink size={14} /> Open all ({visibleResources.length})
+                  </button>
+                )}
+              </div>
+              {c?.notes && (
+                <div className="rounded-md bg-black/[0.03] p-3 dark:bg-white/5">
+                  <MarkdownView content={c.notes} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       <ResourceGrid
         resources={visibleResources}
@@ -240,6 +308,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
         />
       )}
       {editingSpaceColor && <SpaceModal space={space} onClose={() => setEditingSpaceColor(false)} />}
+      {editingSpaceNotes && <SpaceNotesModal space={space} onClose={() => setEditingSpaceNotes(false)} />}
       {confirmArchiveSpace && (
         <ConfirmDialog
           title="Archive Space"

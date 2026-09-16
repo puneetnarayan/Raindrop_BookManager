@@ -15,8 +15,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { useState } from "react";
-import { SpaceModal } from "@/components/spaces/SpaceModal";
 
 export const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -29,10 +27,9 @@ export const navItems = [
   { href: "/trash", label: "Trash", icon: Trash2 },
 ];
 
-export function NavPanel() {
+export function NavPanel({ onNewSpace }: { onNewSpace: () => void }) {
   const pathname = usePathname();
   const { spaces } = useWorkspace();
-  const [showNewSpace, setShowNewSpace] = useState(false);
 
   const visibleSpaces = spaces
     .filter((s) => !s.trash && !s.archived)
@@ -66,7 +63,7 @@ export function NavPanel() {
           Spaces
         </span>
         <button
-          onClick={() => setShowNewSpace(true)}
+          onClick={onNewSpace}
           aria-label="New Space"
           className="rounded p-0.5 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800"
         >
@@ -108,8 +105,6 @@ export function NavPanel() {
           <Settings size={16} /> Settings
         </Link>
       </div>
-
-      {showNewSpace && <SpaceModal onClose={() => setShowNewSpace(false)} />}
     </div>
   );
 }

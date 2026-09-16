@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function Modal({
   title,
@@ -14,9 +14,26 @@ export function Modal({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        const container = contentRef.current;
+        if (!container) return;
+        const form = container.querySelector("form");
+        if (form) {
+          form.requestSubmit();
+        } else {
+          const submitButton = container.querySelector<HTMLButtonElement>('button[type="submit"]');
+          submitButton?.click();
+        }
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -29,6 +46,7 @@ export function Modal({
       role="presentation"
     >
       <div
+        ref={contentRef}
         className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} rounded-lg bg-white shadow-xl dark:bg-neutral-900`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"

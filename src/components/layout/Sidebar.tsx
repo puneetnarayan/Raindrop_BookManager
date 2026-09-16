@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GitBranch, Home, ListTree, Menu, Plus, Search } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { navItems, NavPanel } from "@/components/layout/NavPanel";
 import { TreePanel } from "@/components/layout/TreePanel";
 import { GithubStatusPanel } from "@/components/layout/GithubStatusPanel";
+import { SpaceModal } from "@/components/spaces/SpaceModal";
+import { NEW_SPACE_SHORTCUT_EVENT } from "@/lib/client/shortcuts";
 
 type Tab = "nav" | "tree" | "github";
 
@@ -22,70 +24,75 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
   const { githubConnected, saveSignal } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<Tab>("nav");
+  const [showNewSpace, setShowNewSpace] = useState(false);
+
+  useEffect(() => {
+    function onShortcut() {
+      setShowNewSpace(true);
+    }
+    window.addEventListener(NEW_SPACE_SHORTCUT_EVENT, onShortcut);
+    return () => window.removeEventListener(NEW_SPACE_SHORTCUT_EVENT, onShortcut);
+  }, []);
 
   const dotColor =
     githubConnected === null ? "bg-neutral-400" : githubConnected ? "bg-emerald-500" : "bg-rose-500";
 
-  if (collapsed) {
-    return (
-      <nav className="flex h-full w-14 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-50 py-3 dark:border-neutral-800 dark:bg-neutral-950">
-        <button
-          onClick={() => setCollapsed(false)}
-          aria-label="Expand sidebar"
-          className="rounded-md p-2 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
-        >
-          <Menu size={18} />
-        </button>
-        <Link
-          href="/"
-          aria-label="Home"
-          title="Home"
-          className={`mt-1 rounded-md p-2 ${
-            pathname === "/"
-              ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-              : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-          }`}
-        >
-          <Home size={16} />
-        </Link>
-        <button
-          onClick={onAddResource}
-          aria-label="Add Resource"
-          title="Add Resource"
-          className="mt-3 rounded-md bg-violet-100 p-2 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
-        >
-          <Plus size={16} />
-        </button>
-        <div className="mt-3 flex flex-col items-center gap-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={item.label}
-                className={`rounded-md p-2 ${
-                  active
-                    ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-                    : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
-                }`}
-              >
-                <Icon size={16} />
-              </Link>
-            );
-          })}
-        </div>
-        <span
-          key={saveSignal}
-          title={githubConnected ? "Connected to GitHub" : "Not connected"}
-          className={`save-pulse mt-auto h-2.5 w-2.5 shrink-0 rounded-full ${dotColor}`}
-        />
-      </nav>
-    );
-  }
-
-  return (
+  const content = collapsed ? (
+    <nav className="flex h-full w-14 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-50 py-3 dark:border-neutral-800 dark:bg-neutral-950">
+      <button
+        onClick={() => setCollapsed(false)}
+        aria-label="Expand sidebar"
+        className="rounded-md p-2 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-800"
+      >
+        <Menu size={18} />
+      </button>
+      <Link
+        href="/"
+        aria-label="Home"
+        title="Home"
+        className={`mt-1 rounded-md p-2 ${
+          pathname === "/"
+            ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
+            : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+        }`}
+      >
+        <Home size={16} />
+      </Link>
+      <button
+        onClick={onAddResource}
+        aria-label="Add Resource"
+        title="Add Resource (Cmd/Ctrl+N)"
+        className="mt-3 rounded-md bg-violet-100 p-2 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
+      >
+        <Plus size={16} />
+      </button>
+      <div className="mt-3 flex flex-col items-center gap-1 overflow-y-auto">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`rounded-md p-2 ${
+                active
+                  ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-white"
+                  : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+              }`}
+            >
+              <Icon size={16} />
+            </Link>
+          );
+        })}
+      </div>
+      <span
+        key={saveSignal}
+        title={githubConnected ? "Connected to GitHub" : "Not connected"}
+        className={`save-pulse mt-auto h-2.5 w-2.5 shrink-0 rounded-full ${dotColor}`}
+      />
+    </nav>
+  ) : (
     <nav className="flex h-full w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
       <div className="flex items-center gap-1 border-b border-neutral-200 p-2 dark:border-neutral-800">
         <button
@@ -139,6 +146,7 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
       <div className="space-y-2 p-3">
         <button
           onClick={onAddResource}
+          title="Cmd/Ctrl+N"
           className="flex w-full items-center justify-center gap-1.5 rounded-md bg-violet-100 px-3 py-2 text-sm font-medium text-violet-800 transition-colors hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
         >
           <Plus size={16} /> Add Resource
@@ -155,10 +163,17 @@ export function Sidebar({ onAddResource }: { onAddResource: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {tab === "nav" && <NavPanel />}
+        {tab === "nav" && <NavPanel onNewSpace={() => setShowNewSpace(true)} />}
         {tab === "tree" && <TreePanel />}
         {tab === "github" && <GithubStatusPanel />}
       </div>
     </nav>
+  );
+
+  return (
+    <>
+      {content}
+      {showNewSpace && <SpaceModal onClose={() => setShowNewSpace(false)} />}
+    </>
   );
 }

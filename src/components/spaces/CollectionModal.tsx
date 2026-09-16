@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/common/Modal";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { Collection } from "@/lib/validation/schemas";
+import { MarkdownEditor } from "@/components/common/MarkdownEditor";
 
 export function CollectionModal({
   spaceId,
@@ -19,6 +20,7 @@ export function CollectionModal({
   const { createCollection, updateCollection } = useWorkspace();
   const [name, setName] = useState(collection?.name ?? "");
   const [description, setDescription] = useState(collection?.description ?? "");
+  const [notes, setNotes] = useState(collection?.notes ?? "");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -27,11 +29,18 @@ export function CollectionModal({
     setSaving(true);
     try {
       if (collection) {
-        await updateCollection(collection.id, { name: name.trim(), description: description.trim() || undefined });
+        await updateCollection(collection.id, {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          notes: notes.trim() || undefined,
+        });
       } else {
         const created = await createCollection({ spaceId, name: name.trim() });
-        if (description.trim()) {
-          await updateCollection(created.id, { description: description.trim() });
+        if (description.trim() || notes.trim()) {
+          await updateCollection(created.id, {
+            description: description.trim() || undefined,
+            notes: notes.trim() || undefined,
+          });
         }
         onCreated?.(created);
       }
@@ -44,7 +53,7 @@ export function CollectionModal({
   }
 
   return (
-    <Modal title={collection ? "Rename Collection" : "New Collection"} onClose={onClose}>
+    <Modal title={collection ? "Edit Collection" : "New Collection"} onClose={onClose} wide>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium">Name</label>
@@ -64,6 +73,10 @@ export function CollectionModal({
             rows={2}
             className="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Notes</label>
+          <MarkdownEditor value={notes} onChange={setNotes} rows={4} placeholder="Longer notes for this collection…" />
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-pastel-secondary">
