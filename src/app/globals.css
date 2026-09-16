@@ -25,18 +25,25 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Pastel button system, shared across the app */
+/* Pastel button system, shared across the app. Each darkens on hover, darkens
+   further on click (active), and lightens back on release. */
 .btn-pastel-primary {
-  @apply rounded-md bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-800 transition-colors hover:bg-violet-200 disabled:opacity-50 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60;
+  @apply rounded-md bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-800 transition-colors hover:bg-violet-200 active:bg-violet-300 disabled:opacity-50 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60 dark:active:bg-violet-900/80;
 }
 .btn-pastel-secondary {
-  @apply rounded-md border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800;
+  @apply rounded-md border border-neutral-300 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-100 active:bg-neutral-200 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:active:bg-neutral-700;
 }
 .btn-pastel-danger {
-  @apply rounded-md bg-rose-100 px-3 py-1.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-200 disabled:opacity-50 dark:bg-rose-900/40 dark:text-rose-200 dark:hover:bg-rose-900/60;
+  @apply rounded-md bg-rose-100 px-3 py-1.5 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-200 active:bg-rose-300 disabled:opacity-50 dark:bg-rose-900/40 dark:text-rose-200 dark:hover:bg-rose-900/60 dark:active:bg-rose-900/80;
 }
 .btn-pastel-primary-sm {
-  @apply rounded-md bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800 transition-colors hover:bg-violet-200 disabled:opacity-50 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60;
+  @apply rounded-md bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800 transition-colors hover:bg-violet-200 active:bg-violet-300 disabled:opacity-50 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60 dark:active:bg-violet-900/80;
+}
+
+/* Stat/category cards: pastel background (often set inline per-category), darken on
+   hover via a brightness filter (works regardless of the inline color), darker on click. */
+.stat-card {
+  @apply block rounded-lg border border-black/5 p-4 transition-[filter] duration-150 hover:brightness-95 active:brightness-90 dark:border-white/5;
 }
 
 @keyframes save-pulse {

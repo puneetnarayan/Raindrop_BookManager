@@ -9,6 +9,7 @@ import { CollectionModal } from "@/components/spaces/CollectionModal";
 import { SpaceModal } from "@/components/spaces/SpaceModal";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { InlineEditableText } from "@/components/common/InlineEditableText";
+import { ContextMenu, ContextMenuItem } from "@/components/common/ContextMenu";
 import { Collection } from "@/lib/validation/schemas";
 
 function CollectionPill({
@@ -20,9 +21,28 @@ function CollectionPill({
   active: boolean;
   onSelect: () => void;
 }) {
-  const { updateCollection } = useWorkspace();
+  const { updateCollection, resources } = useWorkspace();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(collection.name);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  const collectionResources = resources.filter(
+    (r) => r.collectionId === collection.id && !r.trash && !r.archived
+  );
+
+  function openAllLinks() {
+    for (const r of collectionResources) {
+      window.open(r.url, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  const menuItems: ContextMenuItem[] = [
+    {
+      label: `Open all links (${collectionResources.length})`,
+      onClick: openAllLinks,
+    },
+    { label: "Rename", onClick: () => setEditing(true) },
+  ];
 
   if (editing) {
     return (
@@ -51,10 +71,14 @@ function CollectionPill({
 
   return (
     <div
-      className={`group flex items-center gap-1 rounded-full pl-3 pr-1.5 py-1 text-sm transition-colors ${
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setMenuPos({ x: e.clientX, y: e.clientY });
+      }}
+      className={`group flex items-center gap-1 rounded-full pl-3 pr-1.5 py-1 text-sm transition-colors active:brightness-95 ${
         active
-          ? "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200"
-          : "border border-neutral-300 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
+          ? "bg-violet-100 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200"
+          : "border border-neutral-300 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
       }`}
     >
       <button onClick={onSelect}>{collection.name}</button>
@@ -65,6 +89,9 @@ function CollectionPill({
       >
         <Pencil size={11} />
       </button>
+      {menuPos && (
+        <ContextMenu x={menuPos.x} y={menuPos.y} items={menuItems} onClose={() => setMenuPos(null)} />
+      )}
     </div>
   );
 }

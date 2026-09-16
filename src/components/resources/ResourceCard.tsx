@@ -45,8 +45,8 @@ export function ResourceCard({ resource }: { resource: Resource }) {
       style={{ backgroundColor: cardBg }}
       className="group relative flex flex-col overflow-hidden rounded-lg border border-neutral-200/60 transition-shadow hover:shadow-md dark:border-neutral-800"
     >
-      {/* Darkens the whole card on hover without needing a per-color dark variant. */}
-      <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/[0.06]" />
+      {/* Darkens the whole card on hover, darker still while clicking — no per-color dark variant needed. */}
+      <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/[0.06] group-active:bg-black/[0.14]" />
 
       <a
         href={resource.url}

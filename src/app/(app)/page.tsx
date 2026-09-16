@@ -4,14 +4,33 @@ import Link from "next/link";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { ResourceGrid } from "@/components/resources/ResourceGrid";
 
-function StatCard({ label, value, href }: { label: string; value: number; href?: string }) {
-  const content = (
-    <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+const STAT_COLORS = {
+  violet: "bg-violet-100 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200",
+  blue: "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200",
+  emerald: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200",
+  amber: "bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200",
+  sky: "bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200",
+  neutral: "bg-neutral-100 text-neutral-900 dark:bg-neutral-800/60 dark:text-neutral-200",
+  rose: "bg-rose-100 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200",
+} as const;
+
+function StatCard({
+  label,
+  value,
+  href,
+  color,
+}: {
+  label: string;
+  value: number;
+  href: string;
+  color: keyof typeof STAT_COLORS;
+}) {
+  return (
+    <Link href={href} className={`stat-card ${STAT_COLORS[color]}`}>
       <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-xs text-neutral-500">{label}</p>
-    </div>
+      <p className="text-xs opacity-80">{label}</p>
+    </Link>
   );
-  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 export default function DashboardPage() {
@@ -37,13 +56,13 @@ export default function DashboardPage() {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        <StatCard label="Spaces" value={spaces.filter((s) => !s.trash).length} />
-        <StatCard label="Collections" value={collections.filter((c) => !c.trash).length} />
-        <StatCard label="Resources" value={active.length} href="/all" />
-        <StatCard label="Favorites" value={favorites.length} href="/favorites" />
-        <StatCard label="Pinned" value={pinned.length} />
-        <StatCard label="Archived" value={archived.length} href="/archive" />
-        <StatCard label="Trash" value={trashed.length} href="/trash" />
+        <StatCard label="Spaces" value={spaces.filter((s) => !s.trash).length} href="/spaces" color="violet" />
+        <StatCard label="Collections" value={collections.filter((c) => !c.trash).length} href="/collections" color="blue" />
+        <StatCard label="Resources" value={active.length} href="/all" color="emerald" />
+        <StatCard label="Favorites" value={favorites.length} href="/favorites" color="amber" />
+        <StatCard label="Pinned" value={pinned.length} href="/pinned" color="sky" />
+        <StatCard label="Archived" value={archived.length} href="/archive" color="neutral" />
+        <StatCard label="Trash" value={trashed.length} href="/trash" color="rose" />
       </div>
 
       {dead.length > 0 && (
