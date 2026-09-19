@@ -109,6 +109,13 @@ export function SaveSessionModal({ onClose }: { onClose: () => void }) {
           new Collection, in the order you paste them. Titles default to the URL — edit them
           later, or open a resource once to have this picked up automatically over time.
         </p>
+        <p className="text-xs text-neutral-400">
+          Tip: select multiple tabs in your browser and use its &ldquo;Copy Links&rdquo; option to
+          paste them all here at once — or install the{" "}
+          <code className="rounded bg-neutral-100 px-1 py-0.5 dark:bg-neutral-800">extension/</code>{" "}
+          folder from this repo as an unpacked browser extension for a one-click copy of every
+          open tab.
+        </p>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

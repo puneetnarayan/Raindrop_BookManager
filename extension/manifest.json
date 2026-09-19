@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "BookManager Tab Saver",
+  "description": "Captures all your open tab URLs in one click so you can save them as a Collection in Raindrop BookManager.",
+  "version": "1.0.0",
+  "permissions": ["tabs", "storage", "clipboardWrite"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

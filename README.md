@@ -123,19 +123,27 @@ overwriting newer data.
   (Contents: Read & write).
 - No secrets are committed to this repository; `.env.local` is git-ignored.
 
+## Browser extension (optional)
+
+`extension/` is a small Manifest V3 browser extension that captures every
+open tab's URL in one click (copies them to your clipboard) and can open
+the app straight to Save Session for pasting. See `extension/README.md`
+for how to load it as an unpacked extension. It talks to nothing but your
+clipboard and your browser's tab list — no new server endpoints, no login.
+
 ## Roadmap
 
 - [x] Phase 1 — Foundation: GitHub data layer, backups, error handling
-- [ ] Phase 2 — Spaces, Collections, Resources, tags, favorites, archive, trash
-- [ ] Phase 3 — Next queue, Quick Links, Notes, search, keyboard shortcuts
-- [ ] Phase 4 — Bulk operations, duplicate detection, import/export
+- [x] Phase 2 — Spaces, Collections, Resources, tags, favorites, archive, trash
+- [x] Phase 3 — Quick Links, Notes, search, keyboard shortcuts (Next queue skipped by request)
+- [x] Phase 4 — Bulk operations, duplicate detection, import/export
 - [ ] Phase 5 — Dead-link checking
 - [ ] Phase 6 — Read-only collection sharing
 - [ ] Phase 7 — Security/accessibility/performance hardening, final deploy
 
 ## Attribution
 
-Built with `raindropio/app` (MIT licensed) used only as a UX/pattern
-reference — see `THIRD_PARTY_NOTICES.md` (added once any code is adapted
-from it) for details. No Raindrop.io branding, backend, or account is used;
-this app does not depend on Raindrop.io at all.
+Built independently. `raindropio/app` (MIT licensed) was consulted only
+as UX/pattern reference (never copied) — see `THIRD_PARTY_NOTICES.md` for
+details. No Raindrop.io branding, backend, or account is used; this app
+does not depend on Raindrop.io at all.
