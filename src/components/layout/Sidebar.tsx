@@ -22,9 +22,13 @@ const TABS: { id: Tab; label: string; icon: typeof Menu }[] = [
 export function Sidebar({
   onAddResource,
   onSaveSession,
+  mobileOpen,
+  onMobileClose,
 }: {
   onAddResource: () => void;
   onSaveSession: () => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 }) {
   const pathname = usePathname();
   const { githubConnected, saveSignal } = useWorkspace();
@@ -40,11 +44,25 @@ export function Sidebar({
     return () => window.removeEventListener(NEW_SPACE_SHORTCUT_EVENT, onShortcut);
   }, []);
 
+  // Navigating away closes the mobile drawer, same as tapping outside it.
+  useEffect(() => {
+    onMobileClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   const dotColor =
     githubConnected === null ? "bg-neutral-400" : githubConnected ? "bg-emerald-500" : "bg-rose-500";
 
-  const content = collapsed ? (
-    <nav className="flex h-full w-14 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-50 py-3 dark:border-neutral-800 dark:bg-neutral-950">
+  const mobileDrawerClasses = `fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 sm:static sm:z-auto sm:translate-x-0 ${
+    mobileOpen ? "translate-x-0" : "-translate-x-full"
+  }`;
+
+  // The icon-only rail is a desktop space-saving preference; on a mobile
+  // drawer there's no reason to show it instead of the full nav.
+  const content = collapsed && !mobileOpen ? (
+    <nav
+      className={`${mobileDrawerClasses} flex h-full w-14 shrink-0 flex-col items-center border-r border-neutral-200 bg-neutral-50 py-3 dark:border-neutral-800 dark:bg-neutral-950`}
+    >
       <button
         onClick={() => setCollapsed(false)}
         aria-label="Expand sidebar"
@@ -107,7 +125,9 @@ export function Sidebar({
       />
     </nav>
   ) : (
-    <nav className="flex h-full w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+    <nav
+      className={`${mobileDrawerClasses} flex h-full w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950`}
+    >
       <div className="flex items-center gap-1 border-b border-neutral-200 p-2 dark:border-neutral-800">
         <button
           onClick={() => setCollapsed(true)}
@@ -192,6 +212,13 @@ export function Sidebar({
 
   return (
     <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 sm:hidden"
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+      )}
       {content}
       {showNewSpace && <SpaceModal onClose={() => setShowNewSpace(false)} />}
     </>

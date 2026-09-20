@@ -3,6 +3,9 @@
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   title,
   onClose,
@@ -15,6 +18,23 @@ export function Modal({
   wide?: boolean;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  // Move focus into the dialog on open, and back to whatever triggered it on close —
+  // otherwise keyboard/screen-reader users lose their place in the page.
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const container = contentRef.current;
+    const firstField = container?.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+    );
+    const firstFocusable = firstField ?? container?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    firstFocusable?.focus();
+
+    return () => {
+      previouslyFocused.current?.focus?.();
+    };
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -32,6 +52,25 @@ export function Modal({
         } else {
           const submitButton = container.querySelector<HTMLButtonElement>('button[type="submit"]');
           submitButton?.click();
+        }
+        return;
+      }
+      if (e.key === "Tab") {
+        // Keep Tab/Shift+Tab cycling inside the dialog instead of escaping to the page behind it.
+        const container = contentRef.current;
+        if (!container) return;
+        const focusable = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+          (el) => el.offsetParent !== null
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
         }
       }
     }

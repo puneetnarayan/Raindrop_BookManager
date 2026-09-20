@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertPubliclyRoutable, BlockedUrlError } from "@/lib/security/ssrf";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,15 @@ export async function GET(request: NextRequest) {
   }
 
   const domain = url.hostname.replace(/^www\./, "");
+
+  try {
+    await assertPubliclyRoutable(url.toString());
+  } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      return NextResponse.json({ error: "invalid_request", message: err.message }, { status: 400 });
+    }
+    return NextResponse.json({ title: "", description: "", favicon: null, thumbnail: null, domain });
+  }
 
   try {
     const controller = new AbortController();

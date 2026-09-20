@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Inbox } from "lucide-react";
 import { Resource } from "@/lib/validation/schemas";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceListRow } from "@/components/resources/ResourceListRow";
 import { ViewModeSwitcher } from "@/components/resources/ViewModeSwitcher";
+
+const PAGE_SIZE = 60;
 
 export function ResourceGrid({
   resources,
@@ -24,6 +27,10 @@ export function ResourceGrid({
 }) {
   const { settings } = useWorkspace();
   const mode = settings.resourceViewMode;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const visible = resources.slice(0, visibleCount);
+  const hasMore = resources.length > visible.length;
 
   return (
     <div className="space-y-3">
@@ -38,35 +45,50 @@ export function ResourceGrid({
           <Inbox size={28} />
           <p className="text-sm">{emptyLabel}</p>
         </div>
-      ) : mode === "list" ? (
-        <div className="overflow-hidden rounded-lg border border-neutral-200/60 dark:border-neutral-800">
-          {resources.map((r) => (
-            <ResourceListRow
-              key={r.id}
-              resource={r}
-              selectable={selectable}
-              selected={selectedIds?.has(r.id)}
-              onToggleSelect={() => onToggleSelect?.(r.id)}
-            />
-          ))}
-        </div>
       ) : (
-        <div
-          className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${
-            mode === "compact" ? "xl:grid-cols-5" : "xl:grid-cols-4"
-          }`}
-        >
-          {resources.map((r) => (
-            <ResourceCard
-              key={r.id}
-              resource={r}
-              size={mode === "compact" ? "compact" : "large"}
-              selectable={selectable}
-              selected={selectedIds?.has(r.id)}
-              onToggleSelect={() => onToggleSelect?.(r.id)}
-            />
-          ))}
-        </div>
+        <>
+          {mode === "list" ? (
+            <div className="overflow-hidden rounded-lg border border-neutral-200/60 dark:border-neutral-800">
+              {visible.map((r) => (
+                <ResourceListRow
+                  key={r.id}
+                  resource={r}
+                  selectable={selectable}
+                  selected={selectedIds?.has(r.id)}
+                  onToggleSelect={() => onToggleSelect?.(r.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${
+                mode === "compact" ? "xl:grid-cols-5" : "xl:grid-cols-4"
+              }`}
+            >
+              {visible.map((r) => (
+                <ResourceCard
+                  key={r.id}
+                  resource={r}
+                  size={mode === "compact" ? "compact" : "large"}
+                  selectable={selectable}
+                  selected={selectedIds?.has(r.id)}
+                  onToggleSelect={() => onToggleSelect?.(r.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+                className="btn-pastel-secondary"
+              >
+                Load more ({resources.length - visible.length} remaining)
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

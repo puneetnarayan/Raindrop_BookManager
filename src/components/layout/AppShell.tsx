@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { Loader2, Menu, TriangleAlert } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Toast } from "@/components/common/Toast";
@@ -15,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [showAddResource, setShowAddResource] = useState(false);
   const [showSaveSession, setShowSaveSession] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useGlobalShortcuts({
     onAddResource: useCallback(() => setShowAddResource(true), []),
@@ -56,8 +57,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar
         onAddResource={() => setShowAddResource(true)}
         onSaveSession={() => setShowSaveSession(true)}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2 border-b border-neutral-200 p-2 dark:border-neutral-800 sm:hidden">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open menu"
+            className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+          >
+            <Menu size={18} />
+          </button>
+          <span className="text-sm font-medium">Raindrop BookManager</span>
+        </div>
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
       <Toast />
       {showAddResource && <AddResourceModal onClose={() => setShowAddResource(false)} />}
       {showSaveSession && <SaveSessionModal onClose={() => setShowSaveSession(false)} />}

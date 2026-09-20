@@ -1,3 +1,5 @@
+import { assertPubliclyRoutable, BlockedUrlError } from "@/lib/security/ssrf";
+
 export type LinkStatus = "healthy" | "redirected" | "warning" | "dead" | "unknown";
 
 export interface LinkCheckResult {
@@ -44,6 +46,14 @@ export async function checkUrl(rawUrl: string, timeoutMs: number): Promise<LinkC
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return { url: rawUrl, httpStatus: null, linkStatus: "unknown" };
+  }
+
+  try {
+    await assertPubliclyRoutable(rawUrl);
+  } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      return { url: rawUrl, httpStatus: null, linkStatus: "unknown" };
+    }
   }
 
   try {
