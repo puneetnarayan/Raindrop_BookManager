@@ -22,6 +22,7 @@ export function ResourceGrid({
   emptyLabel?: string;
   selectable?: boolean;
   selectedIds?: Set<string>;
+  /** Stable reference expected — passed straight through to each card/row so React.memo can skip unaffected ones. */
   onToggleSelect?: (id: string) => void;
   hideViewSwitcher?: boolean;
 }) {
@@ -55,7 +56,7 @@ export function ResourceGrid({
                   resource={r}
                   selectable={selectable}
                   selected={selectedIds?.has(r.id)}
-                  onToggleSelect={() => onToggleSelect?.(r.id)}
+                  onToggleSelect={onToggleSelect}
                 />
               ))}
             </div>
@@ -72,7 +73,7 @@ export function ResourceGrid({
                   size={mode === "compact" ? "compact" : "large"}
                   selectable={selectable}
                   selected={selectedIds?.has(r.id)}
-                  onToggleSelect={() => onToggleSelect?.(r.id)}
+                  onToggleSelect={onToggleSelect}
                 />
               ))}
             </div>

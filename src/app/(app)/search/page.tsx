@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
@@ -39,7 +39,12 @@ export default function SearchPage() {
     });
   }
 
-  const q = query.trim();
+  // Deferring the heavy multi-category filtering keeps keystrokes in the input
+  // feeling instant even over a large workspace, since React can interrupt the
+  // (lower-priority) filtering work if the user keeps typing.
+  const deferredQuery = useDeferredValue(query);
+  const q = deferredQuery.trim();
+  const isStale = query !== deferredQuery;
 
   const results = useMemo(() => {
     if (!q) {
@@ -126,6 +131,7 @@ export default function SearchPage() {
 
       {q && totalResults === 0 && <p className="text-sm text-neutral-500">No matches for &ldquo;{q}&rdquo;.</p>}
 
+      <div className={`space-y-4 transition-opacity ${isStale ? "opacity-60" : ""}`}>
       {q && activeCategories.has("spaces") && results.spaces.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
@@ -222,6 +228,7 @@ export default function SearchPage() {
           />
         </section>
       )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Globe } from "lucide-react";
 import { Resource } from "@/lib/validation/schemas";
 import { useWorkspace } from "@/lib/client/workspace-context";
@@ -8,7 +9,7 @@ import { useResourceCardActions } from "@/lib/client/useResourceCardActions";
 import { ResourceActionButtons } from "@/components/resources/ResourceActionButtons";
 import { EditResourceModal } from "@/components/resources/EditResourceModal";
 
-export function ResourceCard({
+function ResourceCardImpl({
   resource,
   size = "large",
   selectable,
@@ -19,7 +20,7 @@ export function ResourceCard({
   size?: "compact" | "large";
   selectable?: boolean;
   selected?: boolean;
-  onToggleSelect?: () => void;
+  onToggleSelect?: (id: string) => void;
 }) {
   const { spaces } = useWorkspace();
   const { busy, checkingLink, showEdit, setShowEdit, toggle, handleOpen, handleCheckLink, badge } =
@@ -42,7 +43,7 @@ export function ResourceCard({
           <input
             type="checkbox"
             checked={!!selected}
-            onChange={onToggleSelect}
+            onChange={() => onToggleSelect?.(resource.id)}
             aria-label={`Select ${resource.title || resource.url}`}
             className="h-3.5 w-3.5"
           />
@@ -138,3 +139,7 @@ export function ResourceCard({
     </div>
   );
 }
+
+// Resource updates keep unaffected resource objects referentially equal (see workspace-context's
+// commit() map), so memoizing here skips re-rendering every other card whenever one changes.
+export const ResourceCard = memo(ResourceCardImpl);

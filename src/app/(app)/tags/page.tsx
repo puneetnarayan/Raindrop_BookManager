@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { Pencil, Plus, X } from "lucide-react";
@@ -122,17 +122,24 @@ export default function TagsPage() {
   const { tags, resources } = useWorkspace();
   const [selected, setSelected] = useState<string | null>(null);
 
-  const counts = new Map<string, number>();
-  for (const r of resources) {
-    if (r.trash) continue;
-    for (const t of r.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-  }
+  const counts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of resources) {
+      if (r.trash) continue;
+      for (const t of r.tags) map.set(t, (map.get(t) ?? 0) + 1);
+    }
+    return map;
+  }, [resources]);
 
-  const sortedTags = [...tags].sort((a, b) => (counts.get(b.name) ?? 0) - (counts.get(a.name) ?? 0));
+  const sortedTags = useMemo(
+    () => [...tags].sort((a, b) => (counts.get(b.name) ?? 0) - (counts.get(a.name) ?? 0)),
+    [tags, counts]
+  );
 
-  const filtered = selected
-    ? resources.filter((r) => !r.trash && r.tags.includes(selected))
-    : [];
+  const filtered = useMemo(
+    () => (selected ? resources.filter((r) => !r.trash && r.tags.includes(selected)) : []),
+    [selected, resources]
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">

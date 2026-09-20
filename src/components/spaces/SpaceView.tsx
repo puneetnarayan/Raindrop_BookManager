@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, Globe, MoreHorizontal, NotebookText, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
@@ -188,9 +188,22 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
   const [confirmArchiveSpace, setConfirmArchiveSpace] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
-  const spaceCollections = collections
-    .filter((c) => c.spaceId === spaceId && !c.trash && !c.archived)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const spaceCollections = useMemo(
+    () =>
+      collections
+        .filter((c) => c.spaceId === spaceId && !c.trash && !c.archived)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    [collections, spaceId]
+  );
+
+  const visibleResources = useMemo(
+    () =>
+      resources
+        .filter((r) => r.spaceId === spaceId && !r.trash && !r.archived)
+        .filter((r) => !selectedCollectionId || r.collectionId === selectedCollectionId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [resources, spaceId, selectedCollectionId]
+  );
 
   if (!space) {
     return (
@@ -199,11 +212,6 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
       </div>
     );
   }
-
-  const visibleResources = resources
-    .filter((r) => r.spaceId === spaceId && !r.trash && !r.archived)
-    .filter((r) => !selectedCollectionId || r.collectionId === selectedCollectionId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   function selectCollection(id: string | null) {
     const params = new URLSearchParams(searchParams.toString());

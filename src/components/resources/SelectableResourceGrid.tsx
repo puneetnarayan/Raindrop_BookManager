@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Resource } from "@/lib/validation/schemas";
 import { ResourceGrid } from "@/components/resources/ResourceGrid";
@@ -37,14 +37,16 @@ export function SelectableResourceGrid({
     setSelected(new Set(defaultAllSelected ? resources.map((r) => r.id) : []));
   }
 
-  function toggle(id: string) {
+  // Stable reference so React.memo on ResourceCard/ResourceListRow actually skips
+  // re-rendering the cards whose selection state didn't change.
+  const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
 
   function selectAll() {
     setSelected(new Set(resources.map((r) => r.id)));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { createBackup as apiCreateBackup } from "@/lib/client/api";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -29,9 +29,9 @@ export default function TrashPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const trashedResources = resources.filter((r) => r.trash);
-  const trashedCollections = collections.filter((c) => c.trash);
-  const trashedSpaces = spaces.filter((s) => s.trash);
+  const trashedResources = useMemo(() => resources.filter((r) => r.trash), [resources]);
+  const trashedCollections = useMemo(() => collections.filter((c) => c.trash), [collections]);
+  const trashedSpaces = useMemo(() => spaces.filter((s) => s.trash), [spaces]);
   const isEmpty = trashedResources.length + trashedCollections.length + trashedSpaces.length === 0;
   const selectedIds = Array.from(selected).filter((id) => trashedResources.some((r) => r.id === id));
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { ArchiveRestore } from "lucide-react";
@@ -7,9 +8,15 @@ import { ArchiveRestore } from "lucide-react";
 export default function ArchivePage() {
   const { resources, collections, spaces, updateCollection, updateSpace } = useWorkspace();
 
-  const archivedResources = resources.filter((r) => r.archived && !r.trash);
-  const archivedCollections = collections.filter((c) => c.archived && !c.trash);
-  const archivedSpaces = spaces.filter((s) => s.archived && !s.trash);
+  const archivedResources = useMemo(
+    () => resources.filter((r) => r.archived && !r.trash),
+    [resources]
+  );
+  const archivedCollections = useMemo(
+    () => collections.filter((c) => c.archived && !c.trash),
+    [collections]
+  );
+  const archivedSpaces = useMemo(() => spaces.filter((s) => s.archived && !s.trash), [spaces]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-6">

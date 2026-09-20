@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 
@@ -36,20 +37,25 @@ function StatCard({
 export default function DashboardPage() {
   const { spaces, collections, resources } = useWorkspace();
 
-  const active = resources.filter((r) => !r.trash);
-  const favorites = active.filter((r) => r.favorite);
-  const pinned = active.filter((r) => r.pinned);
-  const archived = resources.filter((r) => r.archived && !r.trash);
-  const trashed = resources.filter((r) => r.trash);
-  const dead = active.filter((r) => r.linkStatus === "dead");
-
-  const recentlyAdded = [...active]
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 8);
-  const recentlyOpened = [...active]
-    .filter((r) => r.lastOpenedAt)
-    .sort((a, b) => (b.lastOpenedAt || "").localeCompare(a.lastOpenedAt || ""))
-    .slice(0, 8);
+  // Memoized so an unrelated context change (toast, saveSignal, githubConnected) doesn't
+  // re-run these filters/sorts over the whole resource list on every render.
+  const { active, favorites, pinned, archived, trashed, dead, recentlyAdded, recentlyOpened } =
+    useMemo(() => {
+      const active = resources.filter((r) => !r.trash);
+      return {
+        active,
+        favorites: active.filter((r) => r.favorite),
+        pinned: active.filter((r) => r.pinned),
+        archived: resources.filter((r) => r.archived && !r.trash),
+        trashed: resources.filter((r) => r.trash),
+        dead: active.filter((r) => r.linkStatus === "dead"),
+        recentlyAdded: [...active].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8),
+        recentlyOpened: [...active]
+          .filter((r) => r.lastOpenedAt)
+          .sort((a, b) => (b.lastOpenedAt || "").localeCompare(a.lastOpenedAt || ""))
+          .slice(0, 8),
+      };
+    }, [resources]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-6">

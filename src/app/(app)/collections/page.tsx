@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { pastelTint } from "@/lib/client/colors";
 
 export default function CollectionsPage() {
   const { spaces, collections, resources } = useWorkspace();
-  const visible = collections
-    .filter((c) => !c.trash && !c.archived)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const visible = useMemo(
+    () => collections.filter((c) => !c.trash && !c.archived).sort((a, b) => a.sortOrder - b.sortOrder),
+    [collections]
+  );
+
+  // A count map is O(collections + resources) instead of filtering the whole
+  // resource list once per collection card (O(collections * resources)).
+  const resourceCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of resources) {
+      if (r.trash || r.archived) continue;
+      map.set(r.collectionId, (map.get(r.collectionId) ?? 0) + 1);
+    }
+    return map;
+  }, [resources]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
@@ -22,9 +35,7 @@ export default function CollectionsPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((collection) => {
             const space = spaces.find((s) => s.id === collection.spaceId);
-            const resourceCount = resources.filter(
-              (r) => r.collectionId === collection.id && !r.trash && !r.archived
-            ).length;
+            const resourceCount = resourceCounts.get(collection.id) ?? 0;
             return (
               <Link
                 key={collection.id}
