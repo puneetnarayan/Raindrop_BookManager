@@ -131,13 +131,28 @@ the app straight to Save Session for pasting. See `extension/README.md`
 for how to load it as an unpacked extension. It talks to nothing but your
 clipboard and your browser's tab list — no new server endpoints, no login.
 
+## Link checking
+
+Manual only — nothing runs automatically or on a schedule. From a resource
+card, click the link icon to check just that one; from a selection or
+Settings → Link Checking, check many at once. Each check is a HEAD request
+(GET only as a fallback) with a configurable timeout, batched at low
+concurrency so it doesn't hammer the sites being checked. Statuses:
+Healthy, Redirected, Warning (401/403/429/503 — the site is up but
+blocking or rate-limiting the check), Dead (4xx/5xx/DNS/timeout), Unknown
+(not yet checked). I have not verified the exact serverless function
+duration limit on Vercel Hobby for large batches — `maxDuration` is set to
+60s in `src/app/api/links/check/route.ts` as a best effort; if very large
+batches ever time out, check your plan's actual limit and adjust the
+client-side batch size in `src/lib/client/api.ts` accordingly.
+
 ## Roadmap
 
 - [x] Phase 1 — Foundation: GitHub data layer, backups, error handling
 - [x] Phase 2 — Spaces, Collections, Resources, tags, favorites, archive, trash
 - [x] Phase 3 — Quick Links, Notes, search, keyboard shortcuts (Next queue skipped by request)
 - [x] Phase 4 — Bulk operations, duplicate detection, import/export
-- [ ] Phase 5 — Dead-link checking
+- [x] Phase 5 — Dead-link checking
 - [ ] Phase 6 — Read-only collection sharing
 - [ ] Phase 7 — Security/accessibility/performance hardening, final deploy
 

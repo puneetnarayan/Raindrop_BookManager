@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { createBackup, ApiError } from "@/lib/client/api";
+import { createBackup, checkLinks, ApiError } from "@/lib/client/api";
 import { RefreshCw } from "lucide-react";
 import { downloadFile } from "@/lib/client/download";
 import { buildFullExport } from "@/lib/export/exportJson";
@@ -24,12 +24,14 @@ interface BackupEntry {
 }
 
 export default function SettingsPage() {
-  const { settings, updateSettings, spaces, collections, resources, tags, quickLinks } = useWorkspace();
+  const { settings, updateSettings, spaces, collections, resources, tags, quickLinks, bulkUpdateResources } =
+    useWorkspace();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [backups, setBackups] = useState<BackupEntry[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [linkCheckProgress, setLinkCheckProgress] = useState<{ checked: number; total: number } | null>(null);
 
   async function loadStatus() {
     setStatusError(null);
@@ -104,6 +106,36 @@ export default function SettingsPage() {
   function exportAllBookmarksHtml() {
     const html = resourcesToBookmarksHtml(spaces, collections, resources);
     downloadFile(`bookmanager-bookmarks-${dateStamp()}.html`, html, "text/html");
+  }
+
+  async function handleCheckAllLinks() {
+    const active = resources.filter((r) => !r.trash);
+    if (active.length === 0) return;
+    setBusy("linkcheck");
+    setLinkCheckProgress({ checked: 0, total: active.length });
+    try {
+      const results = await checkLinks(
+        active.map((r) => r.url),
+        settings.linkCheckTimeoutMs,
+        (checked, total) => setLinkCheckProgress({ checked, total })
+      );
+      const byUrl = new Map(results.map((r) => [r.url, r]));
+      const checkedAt = new Date().toISOString();
+      await bulkUpdateResources(
+        active.map((r) => r.id),
+        (r) => {
+          const result = byUrl.get(r.url);
+          return result
+            ? { httpStatus: result.httpStatus, linkStatus: result.linkStatus, lastCheckedAt: checkedAt }
+            : {};
+        }
+      );
+    } catch (err) {
+      setStatusError(err instanceof ApiError ? err.message : "Link check failed.");
+    } finally {
+      setBusy(null);
+      setLinkCheckProgress(null);
+    }
   }
 
   return (
@@ -226,6 +258,36 @@ export default function SettingsPage() {
             Export bookmarks (HTML)
           </button>
         </div>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">Link Checking</h2>
+        <div className="flex items-center gap-3">
+          <label className="text-sm">Timeout (ms)</label>
+          <input
+            type="number"
+            min={1000}
+            max={15000}
+            step={500}
+            value={settings.linkCheckTimeoutMs}
+            onChange={(e) => updateSettings({ linkCheckTimeoutMs: Number(e.target.value) || 8000 })}
+            className="w-24 rounded border border-neutral-300 px-2 py-1 text-sm dark:border-neutral-700 dark:bg-neutral-800"
+          />
+        </div>
+        <p className="text-sm text-neutral-500">
+          Checks are manual only — nothing here runs automatically or on a schedule. Each check
+          uses a HEAD request (falling back to GET only if needed) with a short timeout, and
+          batches are throttled to a handful of connections at a time so it doesn&apos;t hammer the
+          sites being checked.
+        </p>
+        <button onClick={handleCheckAllLinks} disabled={busy !== null} className="btn-pastel-secondary">
+          {linkCheckProgress
+            ? `Checking ${linkCheckProgress.checked}/${linkCheckProgress.total}…`
+            : "Check all resources"}
+        </button>
+        <a href="/dead-links" className="ml-2 text-sm text-neutral-500 underline hover:text-neutral-800 dark:hover:text-neutral-200">
+          View dead &amp; warning links
+        </a>
       </section>
 
       <section className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">

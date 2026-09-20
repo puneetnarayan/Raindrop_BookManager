@@ -1,11 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, ArchiveRestore, Globe, Pencil, Pin, PinOff, Star, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Globe,
+  Link2,
+  Loader2,
+  Pencil,
+  Pin,
+  PinOff,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { Resource } from "@/lib/validation/schemas";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { pastelTint } from "@/lib/client/colors";
+import { checkLinks } from "@/lib/client/api";
 import { EditResourceModal } from "@/components/resources/EditResourceModal";
+
+const LINK_STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  dead: { label: "Dead link", className: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" },
+  warning: { label: "Warning", className: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+  redirected: { label: "Redirected", className: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300" },
+};
 
 export function ResourceCard({
   resource,
@@ -18,12 +36,14 @@ export function ResourceCard({
   selected?: boolean;
   onToggleSelect?: () => void;
 }) {
-  const { updateResource, spaces } = useWorkspace();
+  const { updateResource, spaces, settings } = useWorkspace();
   const [busy, setBusy] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
   const space = spaces.find((s) => s.id === resource.spaceId);
   const cardBg = pastelTint(space?.color, 0.35);
+  const badge = LINK_STATUS_BADGE[resource.linkStatus];
 
   async function toggle(patch: Partial<Resource>) {
     setBusy(true);
@@ -38,6 +58,22 @@ export function ResourceCard({
 
   function handleOpen() {
     updateResource(resource.id, { lastOpenedAt: new Date().toISOString() }).catch(() => {});
+  }
+
+  async function handleCheckLink() {
+    setCheckingLink(true);
+    try {
+      const [result] = await checkLinks([resource.url], settings.linkCheckTimeoutMs);
+      await updateResource(resource.id, {
+        httpStatus: result.httpStatus,
+        linkStatus: result.linkStatus,
+        lastCheckedAt: new Date().toISOString(),
+      });
+    } catch {
+      // toast shown by context
+    } finally {
+      setCheckingLink(false);
+    }
   }
 
   return (
@@ -117,7 +153,14 @@ export function ResourceCard({
         {resource.description && (
           <p className="line-clamp-2 text-xs text-neutral-600 dark:text-neutral-400">{resource.description}</p>
         )}
-        <p className="truncate text-xs text-neutral-500">{resource.domain}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-xs text-neutral-500">{resource.domain}</p>
+          {badge && (
+            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${badge.className}`}>
+              {badge.label}
+            </span>
+          )}
+        </div>
         {resource.tags.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {resource.tags.map((tag) => (
@@ -141,6 +184,15 @@ export function ResourceCard({
           className="rounded p-1 text-neutral-500 hover:bg-white/60 dark:hover:bg-black/30"
         >
           <Pencil size={14} />
+        </button>
+        <button
+          disabled={busy || checkingLink}
+          onClick={handleCheckLink}
+          aria-label="Check link"
+          title="Check link"
+          className="rounded p-1 text-neutral-500 hover:bg-white/60 dark:hover:bg-black/30"
+        >
+          {checkingLink ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
         </button>
         <button
           disabled={busy}

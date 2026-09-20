@@ -66,10 +66,12 @@ export default function DashboardPage() {
       </div>
 
       {dead.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          {dead.length} resource{dead.length === 1 ? "" : "s"} flagged as dead links. Link
-          checking lands in a later phase.
-        </div>
+        <Link
+          href="/dead-links"
+          className="block rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900/60"
+        >
+          {dead.length} resource{dead.length === 1 ? "" : "s"} flagged as dead links — view them
+        </Link>
       )}
 
       <section>

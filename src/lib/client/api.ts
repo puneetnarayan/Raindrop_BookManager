@@ -87,3 +87,48 @@ export async function fetchUrlMetadata(url: string): Promise<UrlMetadata | null>
     return null;
   }
 }
+
+export type LinkStatus = "healthy" | "redirected" | "warning" | "dead" | "unknown";
+
+export interface LinkCheckResult {
+  url: string;
+  httpStatus: number | null;
+  linkStatus: LinkStatus;
+  finalUrl?: string;
+}
+
+const LINK_CHECK_BATCH_SIZE = 25;
+
+async function checkLinksBatch(urls: string[], timeoutMs?: number): Promise<LinkCheckResult[]> {
+  const res = await fetch("/api/links/check", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ urls, timeoutMs }),
+  });
+  if (!res.ok) {
+    const { message, error } = await parseErrorBody(res);
+    throw new ApiError(message, res.status, error);
+  }
+  const json = await res.json();
+  return json.results;
+}
+
+/**
+ * Checks any number of URLs, chunking into batches the server will accept
+ * and running batches sequentially (never many at once) so a large check
+ * doesn't hammer either our own server or the sites being checked.
+ */
+export async function checkLinks(
+  urls: string[],
+  timeoutMs?: number,
+  onProgress?: (checked: number, total: number) => void
+): Promise<LinkCheckResult[]> {
+  const results: LinkCheckResult[] = [];
+  for (let i = 0; i < urls.length; i += LINK_CHECK_BATCH_SIZE) {
+    const batch = urls.slice(i, i + LINK_CHECK_BATCH_SIZE);
+    const batchResults = await checkLinksBatch(batch, timeoutMs);
+    results.push(...batchResults);
+    onProgress?.(results.length, urls.length);
+  }
+  return results;
+}

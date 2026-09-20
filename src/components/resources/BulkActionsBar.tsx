@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Archive,
   ArchiveRestore,
+  Link2,
   Loader2,
   Pin,
   RotateCcw,
@@ -13,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { createBackup } from "@/lib/client/api";
+import { createBackup, checkLinks } from "@/lib/client/api";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { Modal } from "@/components/common/Modal";
 
@@ -158,7 +159,7 @@ export function BulkActionsBar({
   context: BulkContext;
   onClear: () => void;
 }) {
-  const { bulkUpdateResources, bulkDeleteResourcesForever } = useWorkspace();
+  const { resources, settings, bulkUpdateResources, bulkDeleteResourcesForever } = useWorkspace();
   const [busy, setBusy] = useState<string | null>(null);
   const [showMove, setShowMove] = useState(false);
   const [tagModal, setTagModal] = useState<"add" | "remove" | null>(null);
@@ -168,6 +169,26 @@ export function BulkActionsBar({
     setBusy(label);
     try {
       await action();
+    } catch {
+      // toast shown by context
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleCheckLinks() {
+    setBusy("check");
+    try {
+      const urls = resources.filter((r) => selectedIds.includes(r.id)).map((r) => r.url);
+      const results = await checkLinks(urls, settings.linkCheckTimeoutMs);
+      const byUrl = new Map(results.map((r) => [r.url, r]));
+      const checkedAt = new Date().toISOString();
+      await bulkUpdateResources(selectedIds, (r) => {
+        const result = byUrl.get(r.url);
+        return result
+          ? { httpStatus: result.httpStatus, linkStatus: result.linkStatus, lastCheckedAt: checkedAt }
+          : {};
+      });
     } catch {
       // toast shown by context
     } finally {
@@ -236,6 +257,13 @@ export function BulkActionsBar({
           </button>
           <button
             disabled={busy !== null}
+            onClick={handleCheckLinks}
+            className="btn-pastel-secondary flex items-center gap-1 !px-2.5 !py-1 text-xs"
+          >
+            <Link2 size={12} /> {busy === "check" ? "Checking…" : "Check links"}
+          </button>
+          <button
+            disabled={busy !== null}
             onClick={() => setTagModal("add")}
             className="btn-pastel-secondary flex items-center gap-1 !px-2.5 !py-1 text-xs"
           >
@@ -266,6 +294,13 @@ export function BulkActionsBar({
             className="btn-pastel-primary-sm flex items-center gap-1"
           >
             <ArchiveRestore size={12} /> Unarchive
+          </button>
+          <button
+            disabled={busy !== null}
+            onClick={handleCheckLinks}
+            className="btn-pastel-secondary flex items-center gap-1 !px-2.5 !py-1 text-xs"
+          >
+            <Link2 size={12} /> {busy === "check" ? "Checking…" : "Check links"}
           </button>
           <button
             disabled={busy !== null}
