@@ -156,6 +156,7 @@ export const SettingsSchema = z.object({
   linkCheckTimeoutMs: z.number().default(8000),
   /** Normalized-URL group keys the user has explicitly said are not duplicates. */
   ignoredDuplicateGroupKeys: z.array(z.string()).default([]),
+  resourceViewMode: z.enum(["compact", "list", "large"]).default("compact"),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

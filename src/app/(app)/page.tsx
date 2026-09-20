@@ -86,7 +86,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Recently Opened
           </h2>
-          <ResourceGrid resources={recentlyOpened} />
+          <ResourceGrid resources={recentlyOpened} hideViewSwitcher />
         </section>
       )}
     </div>

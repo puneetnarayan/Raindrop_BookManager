@@ -187,7 +187,7 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Favorites ({results.favorites.length})
           </h2>
-          <ResourceGrid resources={results.favorites} />
+          <ResourceGrid resources={results.favorites} hideViewSwitcher />
         </section>
       )}
 
@@ -196,7 +196,7 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Archived ({results.archived.length})
           </h2>
-          <ResourceGrid resources={results.archived} />
+          <ResourceGrid resources={results.archived} hideViewSwitcher />
         </section>
       )}
 
@@ -205,7 +205,7 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Trash ({results.trash.length})
           </h2>
-          <ResourceGrid resources={results.trash} />
+          <ResourceGrid resources={results.trash} hideViewSwitcher />
         </section>
       )}
     </div>

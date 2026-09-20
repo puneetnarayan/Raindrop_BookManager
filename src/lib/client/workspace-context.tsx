@@ -112,6 +112,7 @@ const EMPTY: WorkspaceData = {
       timeFormat: "24h",
       linkCheckTimeoutMs: 8000,
       ignoredDuplicateGroupKeys: [],
+      resourceViewMode: "compact",
     },
     sha: null,
   },
