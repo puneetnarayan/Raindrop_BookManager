@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 
 const STAT_COLORS = {
   violet: "bg-violet-100 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200",
@@ -78,7 +78,11 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-400">
           Recently Added
         </h2>
-        <ResourceGrid resources={recentlyAdded} emptyLabel="Add your first resource to see it here." />
+        <SelectableResourceGrid
+          resources={recentlyAdded}
+          emptyLabel="Add your first resource to see it here."
+          resetKey="recently-added"
+        />
       </section>
 
       {recentlyOpened.length > 0 && (
@@ -86,7 +90,7 @@ export default function DashboardPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Recently Opened
           </h2>
-          <ResourceGrid resources={recentlyOpened} hideViewSwitcher />
+          <SelectableResourceGrid resources={recentlyOpened} hideViewSwitcher resetKey="recently-opened" />
         </section>
       )}
     </div>

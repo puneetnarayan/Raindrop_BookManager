@@ -1,7 +1,7 @@
 "use client";
 
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 
 export default function PinnedPage() {
   const { resources } = useWorkspace();
@@ -12,7 +12,7 @@ export default function PinnedPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-6">
       <h1 className="text-2xl font-semibold">Pinned</h1>
-      <ResourceGrid resources={visible} emptyLabel="Pin a resource to see it here." />
+      <SelectableResourceGrid resources={visible} emptyLabel="Pin a resource to see it here." />
     </div>
   );
 }

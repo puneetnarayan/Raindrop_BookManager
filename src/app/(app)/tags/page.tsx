@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { Pencil, Plus, X } from "lucide-react";
 import { Tag } from "@/lib/validation/schemas";
 
@@ -159,7 +159,7 @@ export default function TagsPage() {
 
       {selected && (
         <div className="pt-4">
-          <ResourceGrid resources={filtered} />
+          <SelectableResourceGrid resources={filtered} resetKey={`tag-${selected}`} />
         </div>
       )}
     </div>

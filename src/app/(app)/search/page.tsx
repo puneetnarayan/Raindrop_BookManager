@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useWorkspace } from "@/lib/client/workspace-context";
-import { ResourceGrid } from "@/components/resources/ResourceGrid";
+import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { pastelTint } from "@/lib/client/colors";
 import { Search } from "lucide-react";
 
@@ -178,7 +178,7 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Resources ({results.resources.length})
           </h2>
-          <ResourceGrid resources={results.resources} />
+          <SelectableResourceGrid resources={results.resources} resetKey={`search-resources-${q}`} />
         </section>
       )}
 
@@ -187,7 +187,11 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Favorites ({results.favorites.length})
           </h2>
-          <ResourceGrid resources={results.favorites} hideViewSwitcher />
+          <SelectableResourceGrid
+            resources={results.favorites}
+            hideViewSwitcher
+            resetKey={`search-favorites-${q}`}
+          />
         </section>
       )}
 
@@ -196,7 +200,12 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Archived ({results.archived.length})
           </h2>
-          <ResourceGrid resources={results.archived} hideViewSwitcher />
+          <SelectableResourceGrid
+            resources={results.archived}
+            context="archive"
+            hideViewSwitcher
+            resetKey={`search-archived-${q}`}
+          />
         </section>
       )}
 
@@ -205,7 +214,12 @@ export default function SearchPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-400">
             Trash ({results.trash.length})
           </h2>
-          <ResourceGrid resources={results.trash} hideViewSwitcher />
+          <SelectableResourceGrid
+            resources={results.trash}
+            context="trash"
+            hideViewSwitcher
+            resetKey={`search-trash-${q}`}
+          />
         </section>
       )}
     </div>

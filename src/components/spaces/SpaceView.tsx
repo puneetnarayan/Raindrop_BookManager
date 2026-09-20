@@ -353,6 +353,8 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
             ? "Create a collection, then add resources to it."
             : "No resources here yet."
         }
+        defaultAllSelected={!!selectedCollectionId}
+        resetKey={selectedCollectionId ?? spaceId}
       />
 
       {showNewCollection && (
