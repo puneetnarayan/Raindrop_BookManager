@@ -146,6 +146,18 @@ duration limit on Vercel Hobby for large batches — `maxDuration` is set to
 batches ever time out, check your plan's actual limit and adjust the
 client-side batch size in `src/lib/client/api.ts` accordingly.
 
+## Sharing
+
+Any Space or Collection can be shared read-only via its own menu → Share…
+This generates a random token and a `/shared/<token>` link that renders a
+clean, standalone public page (no sidebar, no login, no editing) — visitors
+never get your other Spaces/Collections, and resource notes are excluded
+from what's sent to the page. Turning sharing off (or generating a new
+link) immediately invalidates the old link, since the page is looked up by
+token + a "public" flag together, both stored on the Space/Collection
+itself, and rendered fresh on every request. Sharing is opt-in per item —
+nothing is public by default.
+
 ## Roadmap
 
 - [x] Phase 1 — Foundation: GitHub data layer, backups, error handling
@@ -153,7 +165,7 @@ client-side batch size in `src/lib/client/api.ts` accordingly.
 - [x] Phase 3 — Quick Links, Notes, search, keyboard shortcuts (Next queue skipped by request)
 - [x] Phase 4 — Bulk operations, duplicate detection, import/export
 - [x] Phase 5 — Dead-link checking
-- [ ] Phase 6 — Read-only collection sharing
+- [x] Phase 6 — Read-only collection/space sharing
 - [ ] Phase 7 — Security/accessibility/performance hardening, final deploy
 
 ## Attribution

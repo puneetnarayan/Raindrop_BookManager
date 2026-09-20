@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, MoreHorizontal, NotebookText, Pencil, Plus } from "lucide-react";
+import { ExternalLink, Globe, MoreHorizontal, NotebookText, Pencil, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/client/workspace-context";
 import { SelectableResourceGrid } from "@/components/resources/SelectableResourceGrid";
 import { CollectionModal } from "@/components/spaces/CollectionModal";
@@ -13,6 +13,7 @@ import { ContextMenu, ContextMenuItem } from "@/components/common/ContextMenu";
 import { MarkdownEditor } from "@/components/common/MarkdownEditor";
 import { MarkdownView } from "@/components/common/MarkdownView";
 import { Modal } from "@/components/common/Modal";
+import { ShareModal } from "@/components/common/ShareModal";
 import { Collection, Space } from "@/lib/validation/schemas";
 import { downloadFile } from "@/lib/client/download";
 import { buildCollectionExport, buildSpaceExport } from "@/lib/export/exportJson";
@@ -31,6 +32,7 @@ function CollectionPill({
   const [draft, setDraft] = useState(collection.name);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const collectionResources = resources.filter(
     (r) => r.collectionId === collection.id && !r.trash && !r.archived
@@ -58,6 +60,7 @@ function CollectionPill({
     },
     { label: "Rename", onClick: () => setEditing(true) },
     { label: "Edit description & notes", onClick: () => setShowEditModal(true) },
+    { label: collection.shareMode === "public" ? "Sharing…" : "Share…", onClick: () => setShowShareModal(true) },
     { label: "Export (JSON)", onClick: exportCollection },
   ];
 
@@ -98,7 +101,10 @@ function CollectionPill({
           : "border border-neutral-300 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900"
       }`}
     >
-      <button onClick={onSelect}>{collection.name}</button>
+      <button onClick={onSelect} className="flex items-center gap-1">
+        {collection.shareMode === "public" && <Globe size={11} className="text-emerald-600" />}
+        {collection.name}
+      </button>
       <button
         onClick={() => setShowEditModal(true)}
         aria-label={`Edit ${collection.name}`}
@@ -120,6 +126,16 @@ function CollectionPill({
       )}
       {showEditModal && (
         <CollectionModal collection={collection} spaceId={collection.spaceId} onClose={() => setShowEditModal(false)} />
+      )}
+      {showShareModal && (
+        <ShareModal
+          title={collection.name}
+          kind="collection"
+          shareMode={collection.shareMode}
+          shareToken={collection.shareToken}
+          onSave={(patch) => updateCollection(collection.id, patch)}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );
@@ -168,6 +184,7 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
   const [showNewCollection, setShowNewCollection] = useState(false);
   const [editingSpaceColor, setEditingSpaceColor] = useState(false);
   const [editingSpaceNotes, setEditingSpaceNotes] = useState(false);
+  const [showSpaceShareModal, setShowSpaceShareModal] = useState(false);
   const [confirmArchiveSpace, setConfirmArchiveSpace] = useState(false);
 
   const space = spaces.find((s) => s.id === spaceId);
@@ -216,6 +233,11 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
             className="text-2xl font-semibold px-1"
             inputClassName="text-2xl font-semibold rounded border border-violet-300 px-1 dark:bg-neutral-800"
           />
+          {space.shareMode === "public" && (
+            <span title="Publicly shared">
+              <Globe size={14} className="shrink-0 text-emerald-600" />
+            </span>
+          )}
         </div>
         <div className="relative">
           <details className="group">
@@ -240,6 +262,12 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
                 className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
               >
                 Edit notes
+              </button>
+              <button
+                onClick={() => setShowSpaceShareModal(true)}
+                className="block w-full px-3 py-1.5 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                {space.shareMode === "public" ? "Sharing…" : "Share…"}
               </button>
               <button
                 onClick={exportSpace}
@@ -336,6 +364,16 @@ export function SpaceView({ spaceId }: { spaceId: string }) {
       )}
       {editingSpaceColor && <SpaceModal space={space} onClose={() => setEditingSpaceColor(false)} />}
       {editingSpaceNotes && <SpaceNotesModal space={space} onClose={() => setEditingSpaceNotes(false)} />}
+      {showSpaceShareModal && (
+        <ShareModal
+          title={space.name}
+          kind="space"
+          shareMode={space.shareMode}
+          shareToken={space.shareToken}
+          onSave={(patch) => updateSpace(spaceId, patch)}
+          onClose={() => setShowSpaceShareModal(false)}
+        />
+      )}
       {confirmArchiveSpace && (
         <ConfirmDialog
           title="Archive Space"
